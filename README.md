@@ -1,433 +1,164 @@
 # Face Recognition Attendance System
 
-A comprehensive offline face recognition attendance system using GhostFaceNet and anti-spoofing technology, designed to run in Docker containers for easy deployment and scalability.
+A simple offline face recognition attendance system using DeepFace and GhostFaceNet for real-time employee recognition and attendance tracking.
 
 ## Features
 
-- **Advanced Face Recognition**: GhostFaceNet model with 99.76% accuracy
-- **Anti-Spoofing Protection**: MiniFASNet liveness detection prevents photo/video attacks
-- **Offline Operation**: Works without internet connectivity
-- **Real-time Processing**: < 50ms recognition speed
-- **Modern Web Interface**: Responsive Bootstrap-based UI
-- **Docker Deployment**: Easy setup and scaling
-- **Database Support**: SQLite (default) and PostgreSQL
-- **Comprehensive Reporting**: Attendance analytics and exports
-- **Security Features**: Encrypted data storage and audit trails
+- 🎥 Real-time camera feed for face detection
+- 👤 Face recognition using GhostFaceNet model
+- ✅ Automatic attendance marking with timestamp
+- 📋 Employee management (add/remove employees)
+- 💾 JSON-based data storage (employees and attendance)
+- 🔒 Offline operation (no internet required)
+- 🖥️ Simple web interface
 
-## System Requirements
+## Setup Instructions
 
-### Minimum Requirements
-- CPU: 2 cores, 2.0 GHz
-- RAM: 4 GB
-- Storage: 10 GB available space
-- Camera: USB webcam or built-in camera
-- OS: Linux, Windows, or macOS with Docker support
+### 1. Prerequisites
 
-### Recommended Requirements
-- CPU: 4 cores, 2.5 GHz or higher
-- RAM: 8 GB or more
-- Storage: 50 GB SSD
-- Camera: HD webcam (720p or higher)
-- GPU: Optional CUDA-compatible GPU for enhanced performance
+- Python 3.8 or higher
+- Webcam/Camera access
+- macOS, Linux, or Windows
 
-## Quick Start
+### 2. Installation
 
-### 1. Clone the Repository
+1. Clone or download this project
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   ```
 
-```bash
-git clone <repository-url>
-cd assistantce_project
+3. Activate the virtual environment:
+   ```bash
+   # On macOS/Linux:
+   source venv/bin/activate
+   
+   # On Windows:
+   venv\Scripts\activate
+   ```
+
+4. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### 3. Running the Application
+
+1. Start the Flask server:
+   ```bash
+   python app.py
+   ```
+
+2. Open your web browser and go to:
+   ```
+   http://localhost:5001
+   ```
+
+## How to Use
+
+### Adding New Employees
+
+1. Click "Start Camera" to activate your webcam
+2. Click "Capture for New Employee" to take a photo
+3. Enter the employee's name in the text field
+4. Click "Add Employee" to save them to the database
+
+### Taking Attendance
+
+1. Make sure the camera is started
+2. Position the employee's face in front of the camera
+3. Click "Recognize Face" 
+4. If recognized, attendance will be automatically marked with timestamp
+
+### Viewing Records
+
+- **Registered Employees**: View all employees in the system
+- **Today's Attendance**: See who has checked in today with timestamps
+
+## File Structure
+
+```
+dios_project/
+├── app.py                 # Main Flask application
+├── templates/
+│   └── index.html        # Web interface
+├── requirements.txt      # Python dependencies
+├── employees.json        # Employee database (auto-created)
+├── attendance.json       # Attendance records (auto-created)
+├── face_db/             # Employee face images (auto-created)
+└── venv/                # Virtual environment
 ```
 
-### 2. Environment Setup
+## Technical Details
 
-Create a `.env` file with your configuration:
+### Technology Stack
 
-```bash
-# Copy the example environment file
-cp .env.example .env
+- **Backend**: Flask (Python)
+- **Face Recognition**: DeepFace with GhostFaceNet model
+- **Face Detection**: OpenCV
+- **Database**: JSON files for simplicity
+- **Frontend**: HTML/CSS/JavaScript
+- **Image Processing**: PIL/Pillow
 
-# Edit the configuration
-nano .env
-```
+### Recognition Process
 
-### 3. Build and Run with Docker
+1. Camera captures live video feed
+2. User clicks "Recognize Face" to capture current frame
+3. DeepFace extracts face embedding using GhostFaceNet
+4. System compares embedding against stored employee faces
+5. If match found (threshold < 0.65), employee is identified
+6. Attendance is automatically marked with timestamp
 
-```bash
-# Build and start all services
-docker-compose up --build -d
+### Data Storage
 
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-### 4. Access the Application
-
-- **Web Interface**: http://localhost:5000
-- **Database Admin**: http://localhost:8080 (Adminer)
-- **Health Check**: http://localhost:5000/health
-
-## Configuration
-
-### Environment Variables
-
-Create a `.env` file with the following configuration:
-
-```env
-# Flask Configuration
-FLASK_ENV=production
-SECRET_KEY=your-very-secure-secret-key-change-this
-
-# Database
-DATABASE_URL=sqlite:///data/attendance.db
-
-# Face Recognition
-FACE_RECOGNITION_MODEL=GhostFaceNet
-ANTI_SPOOFING_ENABLED=true
-
-# File Upload
-MAX_UPLOAD_SIZE=16777216  # 16MB
-
-# Camera
-CAMERA_DEVICE_ID=0
-```
-
-### Docker Configuration
-
-The system uses Docker Compose with the following services:
-
-- **face-recognition-app**: Main Flask application
-- **postgres**: PostgreSQL database (optional)
-- **adminer**: Database administration tool
-
-## Usage Guide
-
-### 1. Employee Enrollment
-
-1. Navigate to the Dashboard
-2. Click "Enroll Employee" 
-3. Fill in employee details
-4. Capture a clear face photo
-5. Submit the enrollment
-
-### 2. Mark Attendance
-
-1. Go to "Mark Attendance" page
-2. Click "Start Camera"
-3. Position face in the guide box
-4. Click "Mark Attendance"
-5. View confirmation result
-
-### 3. View Reports
-
-1. Access the "Reports" section
-2. Select date ranges
-3. Export data in CSV, JSON, or Excel formats
-4. View attendance analytics
-
-### 4. Manage Employees
-
-1. Navigate to "Employees" page
-2. View all enrolled employees
-3. Edit employee information
-4. Deactivate/reactivate employees
-
-## API Documentation
-
-### Authentication Endpoints
-
-#### Mark Attendance
-```http
-POST /api/mark_attendance
-Content-Type: application/json
-
-{
-  "image_data": "data:image/jpeg;base64,..."
-}
-```
-
-#### Enroll Employee
-```http
-POST /api/enroll_employee
-Content-Type: application/json
-
-{
-  "employee_id": "EMP001",
-  "name": "John Doe",
-  "department": "IT",
-  "email": "john@company.com",
-  "image_data": "data:image/jpeg;base64,..."
-}
-```
-
-#### System Statistics
-```http
-GET /api/system_stats
-```
-
-### Response Format
-
-```json
-{
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": {
-    // Response data
-  }
-}
-```
-
-## Security Features
-
-### Anti-Spoofing Protection
-- **Liveness Detection**: Detects real human faces vs photos/videos
-- **Texture Analysis**: Analyzes skin texture patterns
-- **Frequency Domain Analysis**: Detects screen replay attacks
-- **Color Distribution**: Identifies printed photos
-
-### Data Security
-- **Encrypted Storage**: Face templates stored as encrypted arrays
-- **Secure Sessions**: Flask session management
-- **Audit Logging**: Complete activity trail
-- **Access Control**: Role-based permissions
-
-## Performance Optimization
-
-### Hardware Optimization
-- Use SSD storage for faster database operations
-- Allocate sufficient RAM for model loading
-- Consider GPU acceleration for large deployments
-
-### Software Optimization
-- Adjust recognition threshold based on accuracy requirements
-- Configure camera resolution for optimal speed/quality balance
-- Use PostgreSQL for high-volume deployments
+- `employees.json`: Stores employee information and metadata
+- `attendance.json`: Stores all attendance records with timestamps
+- `face_db/`: Directory containing employee face images organized by name
 
 ## Troubleshooting
 
-### Common Issues
-
-#### Camera Not Working
-```bash
-# Check camera permissions
-ls /dev/video*
-
-# Test camera access
-docker run --rm --device=/dev/video0 face_recognition_attendance python -c "import cv2; cap = cv2.VideoCapture(0); print('Camera OK' if cap.isOpened() else 'Camera Error')"
+### Port Already in Use
+If port 5001 is busy, modify the port in `app.py`:
+```python
+app.run(debug=True, host='0.0.0.0', port=5002)  # Change to available port
 ```
 
-#### Database Connection Error
-```bash
-# Check database status
-docker-compose ps
+### Camera Access Issues
+- Ensure your browser has camera permissions
+- Try refreshing the page if camera doesn't start
+- Check if other applications are using the camera
 
-# Reset database
-docker-compose down -v
-docker-compose up -d
-```
+### Face Recognition Not Working
+- Ensure good lighting when adding employees
+- Take multiple photos from different angles if needed
+- Check that face is clearly visible and not too far from camera
 
-#### High Memory Usage
-```bash
-# Monitor resource usage
-docker stats
+### Performance Issues
+- Close other applications using the camera
+- Ensure sufficient system memory (4GB+ recommended)
+- Use good quality camera (720p+)
 
-# Restart services
-docker-compose restart face-recognition-app
-```
+## Security & Privacy
 
-### Log Analysis
+- All processing happens locally (offline)
+- No face data is sent to external servers
+- Employee images are stored locally in `face_db/` directory
+- Delete employee folders to remove their data
 
-```bash
-# View application logs
-docker-compose logs face-recognition-app
+## Future Enhancements
 
-# View error logs
-docker exec -it face_recognition_attendance tail -f logs/errors.log
-
-# Check system health
-curl http://localhost:5000/health
-```
-
-## Development
-
-### Local Development Setup
-
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate  # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up development environment
-export FLASK_ENV=development
-export DATABASE_URL=sqlite:///data/attendance.db
-
-# Create directories
-mkdir -p data uploads face_templates logs
-
-# Run application
-python app.py
-```
-
-### Running Tests
-
-```bash
-# Run unit tests
-pytest tests/
-
-# Run with coverage
-pytest --cov=. tests/
-
-# Run specific test
-pytest tests/test_face_recognition.py
-```
-
-### Code Quality
-
-```bash
-# Format code
-black .
-
-# Lint code
-flake8 .
-
-# Type checking
-mypy .
-```
-
-## Deployment
-
-### Production Deployment
-
-1. **Prepare Environment**
-   ```bash
-   # Update system
-   sudo apt update && sudo apt upgrade -y
-   
-   # Install Docker
-   curl -fsSL https://get.docker.com -o get-docker.sh
-   sh get-docker.sh
-   ```
-
-2. **Configure Security**
-   ```bash
-   # Set strong passwords
-   # Configure firewall
-   # Set up SSL/TLS certificates
-   ```
-
-3. **Deploy Application**
-   ```bash
-   # Clone repository
-   git clone <repository-url>
-   cd face-recognition-attendance
-   
-   # Configure environment
-   cp .env.example .env
-   nano .env
-   
-   # Deploy
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
-
-### Scaling
-
-For high-volume deployments:
-
-1. **Load Balancing**: Use nginx or HAProxy
-2. **Database Clustering**: PostgreSQL with replication
-3. **Horizontal Scaling**: Multiple app instances
-4. **Monitoring**: Prometheus + Grafana
-
-## Backup and Recovery
-
-### Automated Backups
-
-```bash
-# Database backup script
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-docker exec postgres pg_dump -U face_user attendance_db > backup_$DATE.sql
-```
-
-### Manual Backup
-
-```bash
-# Backup database
-docker-compose exec postgres pg_dump -U face_user attendance_db > backup.sql
-
-# Backup face templates
-tar -czf face_templates_backup.tar.gz face_templates/
-
-# Backup configuration
-cp .env config_backup.env
-```
-
-### Recovery
-
-```bash
-# Restore database
-docker-compose exec -T postgres psql -U face_user attendance_db < backup.sql
-
-# Restore face templates
-tar -xzf face_templates_backup.tar.gz
-```
-
-## Monitoring
-
-### Health Checks
-
-```bash
-# Application health
-curl http://localhost:5000/health
-
-# Database health
-docker-compose exec postgres pg_isready
-
-# System resources
-docker stats
-```
-
-### Metrics Collection
-
-The system provides built-in metrics:
-- Recognition accuracy rates
-- Processing times
-- System resource usage
-- Error rates and types
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- [ ] Anti-spoofing/liveness detection
+- [ ] Multiple face detection in single frame
+- [ ] Export attendance reports (CSV/PDF)
+- [ ] User authentication for admin access
+- [ ] Database integration (SQLite/PostgreSQL)
+- [ ] Email notifications for attendance
+- [ ] Mobile-responsive interface
 
 ## Support
 
-For support and questions:
-- Create an issue on GitHub
-- Check the troubleshooting section
-- Review the API documentation
+For issues or questions, check the troubleshooting section above or review the project requirements in `dios_v2.md`.
 
-## Changelog
+---
 
-### Version 1.0.0
-- Initial release
-- GhostFaceNet integration
-- Anti-spoofing protection
-- Docker deployment
-- Web interface
-- Database management
-- Reporting features 
+**Note**: This is a prototype implementation focused on core functionality. For production use, consider adding additional security measures, error handling, and database optimization. 

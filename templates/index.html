@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .camera-section {
+            text-align: center;
+        }
+        
+        .camera-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        #video {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            background-color: #000;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .controls {
+            margin-top: 15px;
+        }
+        
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .info-section {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .status-box {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .add-employee {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .employee-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .employee-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .attendance-log {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .attendance-item {
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #f1f3f4;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .loading {
+            display: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Face Recognition Attendance System</h1>
+        
+        <div class="main-content">
+            <!-- Camera Section -->
+            <div class="camera-section">
+                <h3>Camera Feed</h3>
+                <div class="camera-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                
+                <div class="controls">
+                    <button id="startCamera" class="btn">Start Camera</button>
+                    <button id="recognizeFace" class="btn btn-success" disabled>Recognize Face</button>
+                    <button id="captureForEmployee" class="btn btn-warning" disabled>Capture for New Employee</button>
+                </div>
+                
+                <div id="recognitionStatus" class="status-box" style="display: none;"></div>
+                <div class="loading" id="loadingIndicator">Processing...</div>
+            </div>
+            
+            <!-- Info Section -->
+            <div class="info-section">
+                <h3>System Information</h3>
+                
+                <div id="lastRecognition" class="status-box status-info" style="display: none;">
+                    <strong>Last Recognition:</strong><br>
+                    <span id="lastRecognitionText">None</span>
+                </div>
+                
+                <div id="attendanceStatus" class="status-box" style="display: none;"></div>
+                
+                <!-- Add Employee Form -->
+                <div class="add-employee">
+                    <h4>Add New Employee</h4>
+                    <div class="form-group">
+                        <label for="employeeName">Employee Name:</label>
+                        <input type="text" id="employeeName" placeholder="Enter employee name">
+                    </div>
+                    <button id="addEmployee" class="btn" disabled>Add Employee (Capture First)</button>
+                    <div id="addEmployeeStatus" style="margin-top: 10px;"></div>
+                </div>
+                
+                <!-- Employee List -->
+                <div>
+                    <h4>Registered Employees</h4>
+                    <div id="employeeList" class="employee-list">
+                        Loading employees...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Attendance Log -->
+        <div>
+            <h3>Today's Attendance</h3>
+            <div id="attendanceLog" class="attendance-log">
+                Loading attendance records...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream = null;
+        let capturedImage = null;
+        let isProcessing = false;
+        
+        // DOM elements
+        const startCameraBtn = document.getElementById('startCamera');
+        const recognizeFaceBtn = document.getElementById('recognizeFace');
+        const captureForEmployeeBtn = document.getElementById('captureForEmployee');
+        const addEmployeeBtn = document.getElementById('addEmployee');
+        const employeeNameInput = document.getElementById('employeeName');
+        const recognitionStatus = document.getElementById('recognitionStatus');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const lastRecognition = document.getElementById('lastRecognition');
+        const lastRecognitionText = document.getElementById('lastRecognitionText');
+        const attendanceStatus = document.getElementById('attendanceStatus');
+        const addEmployeeStatus = document.getElementById('addEmployeeStatus');
+        const employeeList = document.getElementById('employeeList');
+        const attendanceLog = document.getElementById('attendanceLog');
+        
+        // Event listeners
+        startCameraBtn.addEventListener('click', startCamera);
+        recognizeFaceBtn.addEventListener('click', recognizeFace);
+        captureForEmployeeBtn.addEventListener('click', captureForEmployee);
+        addEmployeeBtn.addEventListener('click', addEmployee);
+        
+        // Start camera
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 } 
+                });
+                video.srcObject = stream;
+                
+                startCameraBtn.textContent = 'Camera Started';
+                startCameraBtn.disabled = true;
+                recognizeFaceBtn.disabled = false;
+                captureForEmployeeBtn.disabled = false;
+                
+                // Set canvas size to match video
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                });
+                
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                showStatus('Error accessing camera: ' + err.message, 'error');
+            }
+        }
+        
+        // Capture current frame
+        function captureFrame() {
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                return null;
+            }
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+        
+        // Recognize face
+        async function recognizeFace() {
+            if (isProcessing) return;
+            
+            const imageData = captureFrame();
+            if (!imageData) {
+                showStatus('Please start camera first', 'error');
+                return;
+            }
+            
+            isProcessing = true;
+            showLoading(true);
+            recognizeFaceBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const result = await response.json();
+                
+                // Check for antispoofing detection first
+                if (result.spoofing_detected) {
+                    showStatus(`🚫 ${result.message}`, 'error');
+                    return;
+                }
+                
+                if (result.success) {
+                    showStatus(`✅ Recognized: ${result.employee} (Real face verified)`, 'success');
+                    lastRecognitionText.textContent = `${result.employee} - ${new Date().toLocaleTimeString()} (Anti-spoofing: PASSED)`;
+                    lastRecognition.style.display = 'block';
+                    
+                    // Automatically mark attendance
+                    markAttendance(result.employee);
+                } else {
+                    // Face not recognized but antispoofing passed
+                    showStatus(`❓ ${result.message} (Real face detected)`, 'error');
+                }
+                
+            } catch (error) {
+                showStatus('Recognition failed: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                showLoading(false);
+                recognizeFaceBtn.disabled = false;
+            }
+        }
+        
+        // Mark attendance
+        async function markAttendance(employeeName) {
+            try {
+                const response = await fetch('/mark_attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ employee: employeeName })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAttendanceStatus(result.message, 'success');
+                    loadAttendance(); // Refresh attendance log
+                } else {
+                    showAttendanceStatus(result.message, 'error');
+                }
+                
+            } catch (error) {
+                showAttendanceStatus('Failed to mark attendance: ' + error.message, 'error');
+            }
+        }
+        
+        // Capture for new employee
+        function captureForEmployee() {
+            const imageData = captureFrame();
+            if (!imageData) {
+                showStatus('Please start camera first', 'error');
+                return;
+            }
+            
+            capturedImage = imageData;
+            addEmployeeBtn.disabled = false;
+            addEmployeeBtn.textContent = 'Add Employee (Image Captured)';
+            showAddEmployeeStatus('📸 Image captured! Enter name and click Add Employee. (Antispoofing will be verified)', 'success');
+        }
+        
+        // Add new employee
+        async function addEmployee() {
+            const name = employeeNameInput.value.trim();
+            if (!name) {
+                showAddEmployeeStatus('Please enter employee name', 'error');
+                return;
+            }
+            
+            if (!capturedImage) {
+                showAddEmployeeStatus('Please capture image first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/add_employee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        image: capturedImage
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAddEmployeeStatus(`✅ ${result.message}`, 'success');
+                    employeeNameInput.value = '';
+                    capturedImage = null;
+                    addEmployeeBtn.disabled = true;
+                    addEmployeeBtn.textContent = 'Add Employee (Capture First)';
+                    loadEmployees(); // Refresh employee list
+                } else {
+                    // Check if it's an antispoofing error
+                    if (result.message.includes('Spoofing detected') || result.message.includes('spoofing')) {
+                        showAddEmployeeStatus(`🚫 ${result.message}`, 'error');
+                    } else {
+                        showAddEmployeeStatus(`❌ ${result.message}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                showAddEmployeeStatus('Failed to add employee: ' + error.message, 'error');
+            }
+        }
+        
+        // Load employees
+        async function loadEmployees() {
+            try {
+                const response = await fetch('/get_employees');
+                const employees = await response.json();
+                
+                employeeList.innerHTML = '';
+                if (Object.keys(employees).length === 0) {
+                    employeeList.innerHTML = '<div class="employee-item">No employees registered</div>';
+                } else {
+                    for (const [name, info] of Object.entries(employees)) {
+                        const item = document.createElement('div');
+                        item.className = 'employee-item';
+                        item.textContent = `${name} (ID: ${info.id})`;
+                        employeeList.appendChild(item);
+                    }
+                }
+            } catch (error) {
+                employeeList.innerHTML = '<div class="employee-item">Error loading employees</div>';
+            }
+        }
+        
+        // Load attendance
+        async function loadAttendance() {
+            try {
+                const response = await fetch('/get_attendance');
+                const attendance = await response.json();
+                
+                attendanceLog.innerHTML = '';
+                
+                // Filter today's attendance
+                const today = new Date().toISOString().split('T')[0];
+                const todayAttendance = attendance.filter(record => record.date === today);
+                
+                if (todayAttendance.length === 0) {
+                    attendanceLog.innerHTML = '<div class="attendance-item">No attendance records for today</div>';
+                } else {
+                    todayAttendance.forEach(record => {
+                        const item = document.createElement('div');
+                        item.className = 'attendance-item';
+                        item.innerHTML = `<strong>${record.employee}</strong> - ${record.time} on ${record.date}`;
+                        attendanceLog.appendChild(item);
+                    });
+                }
+            } catch (error) {
+                attendanceLog.innerHTML = '<div class="attendance-item">Error loading attendance</div>';
+            }
+        }
+        
+        // Utility functions
+        function showStatus(message, type) {
+            recognitionStatus.textContent = message;
+            recognitionStatus.className = `status-box status-${type}`;
+            recognitionStatus.style.display = 'block';
+            
+            setTimeout(() => {
+                recognitionStatus.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showAttendanceStatus(message, type) {
+            attendanceStatus.textContent = message;
+            attendanceStatus.className = `status-box status-${type}`;
+            attendanceStatus.style.display = 'block';
+            
+            setTimeout(() => {
+                attendanceStatus.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showAddEmployeeStatus(message, type) {
+            addEmployeeStatus.innerHTML = `<div class="status-box status-${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                addEmployeeStatus.innerHTML = '';
+            }, 5000);
+        }
+        
+        function showLoading(show) {
+            loadingIndicator.style.display = show ? 'block' : 'none';
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadEmployees();
+            loadAttendance();
+            
+            // Refresh attendance every 30 seconds
+            setInterval(loadAttendance, 30000);
+        });
+    </script>
+</body>
+</html> 
