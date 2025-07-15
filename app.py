@@ -239,29 +239,41 @@ class AttendanceSystem:
             is_processing = False
     
     def mark_attendance(self, employee_name):
-        """Mark attendance for an employee"""
+        """Mark attendance for an employee with multiple in/out events per day"""
         try:
-            # Check if already marked today
             today = datetime.now().strftime("%Y-%m-%d")
-            today_attendance = [record for record in self.attendance 
-                             if record['employee'] == employee_name and record['date'] == today]
-            
-            if today_attendance:
-                return False, "Attendance already marked today"
-            
-            # Mark new attendance
-            attendance_record = {
-                "employee": employee_name,
-                "date": today,
-                "time": datetime.now().strftime("%H:%M:%S"),
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            self.attendance.append(attendance_record)
-            self.save_attendance()
-            
-            return True, f"Attendance marked for {employee_name}"
-        
+            now_time = datetime.now().strftime("%H:%M:%S")
+            now_iso = datetime.now().isoformat()
+            # Find today's record for this employee
+            today_record = None
+            for record in self.attendance:
+                if record.get('employee') == employee_name and record.get('date') == today:
+                    today_record = record
+                    break
+            if today_record is None:
+                # No record for today, create new with first event as 'in'
+                new_record = {
+                    "employee": employee_name,
+                    "date": today,
+                    "events": [
+                        {"type": "in", "time": now_time, "timestamp": now_iso}
+                    ]
+                }
+                self.attendance.append(new_record)
+                self.save_attendance()
+                return True, f"Clocked IN for {employee_name} at {now_time}"
+            else:
+                # There is a record for today, check last event
+                events = today_record.get('events', [])
+                if not events:
+                    next_type = 'in'
+                else:
+                    last_type = events[-1]['type']
+                    next_type = 'out' if last_type == 'in' else 'in'
+                events.append({"type": next_type, "time": now_time, "timestamp": now_iso})
+                today_record['events'] = events
+                self.save_attendance()
+                return True, f"Clocked {'IN' if next_type == 'in' else 'OUT'} for {employee_name} at {now_time}"
         except Exception as e:
             return False, f"Error marking attendance: {str(e)}"
 
