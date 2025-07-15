@@ -239,11 +239,12 @@ class AttendanceSystem:
             is_processing = False
     
     def mark_attendance(self, employee_name):
-        """Mark attendance for an employee with multiple in/out events per day"""
+        """Mark attendance for an employee with multiple in/out events per day and a 2-minute cooldown between events for the same person"""
         try:
             today = datetime.now().strftime("%Y-%m-%d")
             now_time = datetime.now().strftime("%H:%M:%S")
             now_iso = datetime.now().isoformat()
+            now_dt = datetime.now()
             # Find today's record for this employee
             today_record = None
             for record in self.attendance:
@@ -268,7 +269,19 @@ class AttendanceSystem:
                 if not events:
                     next_type = 'in'
                 else:
-                    last_type = events[-1]['type']
+                    last_event = events[-1]
+                    last_type = last_event['type']
+                    last_ts = last_event.get('timestamp')
+                    # Cooldown check
+                    if last_ts:
+                        try:
+                            last_dt = datetime.fromisoformat(last_ts)
+                            diff = (now_dt - last_dt).total_seconds()
+                            if diff < 120:
+                                wait_sec = int(120 - diff)
+                                return False, f"Please wait {wait_sec} seconds before next attendance event. Cooldown is 2 minutes between IN/OUT for the same person."
+                        except Exception:
+                            pass
                     next_type = 'out' if last_type == 'in' else 'in'
                 events.append({"type": next_type, "time": now_time, "timestamp": now_iso})
                 today_record['events'] = events
