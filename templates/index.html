@@ -59,6 +59,18 @@
         .controls {
             margin-top: 15px;
         }
+        .realtime-toggle {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .realtime-status {
+            font-weight: bold;
+            color: #28a745;
+            margin-left: 10px;
+        }
         
         .btn {
             background-color: #007bff;
@@ -209,6 +221,10 @@
                     <button id="recognizeFace" class="btn btn-success" disabled>Recognize Face</button>
                     <button id="captureForEmployee" class="btn btn-warning" disabled>Capture for New Employee</button>
                 </div>
+                <div class="realtime-toggle">
+                    <button id="toggleRealtime" class="btn btn-success" disabled>Start Real-Time Attendance</button>
+                    <span id="realtimeStatus" class="realtime-status" style="display:none;">Real-Time Mode ON</span>
+                </div>
                 
                 <div id="recognitionStatus" class="status-box" style="display: none;"></div>
                 <div class="loading" id="loadingIndicator">Processing...</div>
@@ -262,6 +278,10 @@
         let stream = null;
         let capturedImage = null;
         let isProcessing = false;
+        let realtimeInterval = null;
+        let realtimeMode = false;
+        let lastRecognized = {};
+        const COOLDOWN_SECONDS = 30;
         
         // DOM elements
         const startCameraBtn = document.getElementById('startCamera');
@@ -277,12 +297,15 @@
         const addEmployeeStatus = document.getElementById('addEmployeeStatus');
         const employeeList = document.getElementById('employeeList');
         const attendanceLog = document.getElementById('attendanceLog');
+        const toggleRealtimeBtn = document.getElementById('toggleRealtime');
+        const realtimeStatus = document.getElementById('realtimeStatus');
         
         // Event listeners
         startCameraBtn.addEventListener('click', startCamera);
         recognizeFaceBtn.addEventListener('click', recognizeFace);
         captureForEmployeeBtn.addEventListener('click', captureForEmployee);
         addEmployeeBtn.addEventListener('click', addEmployee);
+        toggleRealtimeBtn.addEventListener('click', toggleRealtimeMode);
         
         // Start camera
         async function startCamera() {
@@ -296,6 +319,7 @@
                 startCameraBtn.disabled = true;
                 recognizeFaceBtn.disabled = false;
                 captureForEmployeeBtn.disabled = false;
+                toggleRealtimeBtn.disabled = false;
                 
                 // Set canvas size to match video
                 video.addEventListener('loadedmetadata', () => {
@@ -540,6 +564,70 @@
         
         function showLoading(show) {
             loadingIndicator.style.display = show ? 'block' : 'none';
+        }
+        
+        // Real-time attendance mode
+        function toggleRealtimeMode() {
+            if (!realtimeMode) {
+                // Start real-time mode
+                realtimeMode = true;
+                toggleRealtimeBtn.textContent = 'Stop Real-Time Attendance';
+                realtimeStatus.style.display = 'inline';
+                recognizeFaceBtn.disabled = true;
+                captureForEmployeeBtn.disabled = true;
+                addEmployeeBtn.disabled = true;
+                realtimeInterval = setInterval(realtimeRecognize, 2000);
+            } else {
+                // Stop real-time mode
+                realtimeMode = false;
+                toggleRealtimeBtn.textContent = 'Start Real-Time Attendance';
+                realtimeStatus.style.display = 'none';
+                recognizeFaceBtn.disabled = false;
+                captureForEmployeeBtn.disabled = false;
+                addEmployeeBtn.disabled = !capturedImage;
+                clearInterval(realtimeInterval);
+            }
+        }
+
+        async function realtimeRecognize() {
+            if (isProcessing || !realtimeMode) return;
+            const imageData = captureFrame();
+            if (!imageData) return;
+            isProcessing = true;
+            showLoading(true);
+            try {
+                const response = await fetch('/recognize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+                const result = await response.json();
+                if (result.spoofing_detected) {
+                    showStatus(`🚫 ${result.message}`, 'error');
+                    return;
+                }
+                if (result.success) {
+                    const now = Date.now();
+                    const emp = result.employee;
+                    if (!lastRecognized[emp] || (now - lastRecognized[emp]) > COOLDOWN_SECONDS * 1000) {
+                        lastRecognized[emp] = now;
+                        showStatus(`✅ Recognized: ${emp} (Real face verified)`, 'success');
+                        lastRecognitionText.textContent = `${emp} - ${new Date().toLocaleTimeString()} (Anti-spoofing: PASSED)`;
+                        lastRecognition.style.display = 'block';
+                        await markAttendance(emp);
+                    } else {
+                        // Cooldown active, skip
+                    }
+                } else {
+                    // Face not recognized but antispoofing passed
+                    showStatus(`❓ ${result.message} (Real face detected)`, 'error');
+                }
+            } catch (error) {
+                showStatus('Recognition failed: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                showLoading(false);
+            }
         }
         
         // Initialize page
