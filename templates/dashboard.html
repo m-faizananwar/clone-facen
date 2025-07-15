@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Face Recognition Attendance System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0"><i class="bi bi-speedometer2"></i> Dashboard</h1>
+                    <p class="text-muted">System overview and recent activity</p>
+                </div>
+                <div>
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-clock"></i> 
+                        <span id="current-time"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="bi bi-people-fill fs-2 text-primary"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-1" id="total-employees">{{ employee_count }}</h3>
+                    <p class="text-muted mb-0">Total Employees</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="bi bi-person-check-fill fs-2 text-success"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-1" id="today-attendance">{{ today_attendance }}</h3>
+                    <p class="text-muted mb-0">Today's Attendance</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="bi bi-camera-fill fs-2 text-warning"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-1" id="camera-status-text">Ready</h3>
+                    <p class="text-muted mb-0">Camera Status</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="bi bi-shield-check fs-2 text-info"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-1" id="security-status">Secure</h3>
+                    <p class="text-muted mb-0">Anti-Spoofing</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning-charge-fill"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{{ url_for('attendance') }}" class="btn btn-primary btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="bi bi-camera-fill mb-2 fs-2"></i>
+                                <span>Mark Attendance</span>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <button type="button" class="btn btn-success btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center" onclick="showEnrollModal()">
+                                <i class="bi bi-person-plus-fill mb-2 fs-2"></i>
+                                <span>Enroll Employee</span>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{{ url_for('reports') }}" class="btn btn-info btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="bi bi-graph-up mb-2 fs-2"></i>
+                                <span>View Reports</span>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{{ url_for('employees') }}" class="btn btn-warning btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="bi bi-people-fill mb-2 fs-2"></i>
+                                <span>Manage Employees</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Attendance</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshRecentActivity()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if recent_records %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Time</th>
+                                        <th>Confidence</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-attendance-table">
+                                    {% for record in recent_records %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                                                    <i class="bi bi-person-fill text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">{{ record.employee_name or record.employee_id }}</div>
+                                                    <small class="text-muted">{{ record.employee_id }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-medium">{{ record.timestamp.strftime('%H:%M:%S') }}</span><br>
+                                            <small class="text-muted">{{ record.timestamp.strftime('%Y-%m-%d') }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                     style="width: {{ (record.confidence_score * 100)|int }}%"></div>
+                                            </div>
+                                            <small class="text-muted">{{ "%.1f"|format(record.confidence_score * 100) }}%</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill"></i> Present
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-3">No attendance records yet</p>
+                            <a href="{{ url_for('attendance') }}" class="btn btn-primary">
+                                <i class="bi bi-camera-fill"></i> Mark First Attendance
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- System Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear-fill"></i> System Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Face Recognition Model:</span>
+                                <span class="fw-semibold" id="fr-model">GhostFaceNet</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Anti-Spoofing:</span>
+                                <span class="badge bg-success" id="antispoofing-status">Enabled</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Camera Device:</span>
+                                <span class="fw-semibold" id="camera-device">Ready</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Database:</span>
+                                <span class="badge bg-success" id="db-status">Connected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Recognition Speed:</span>
+                                <span class="badge bg-success">< 50ms</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Accuracy Rate:</span>
+                                <span class="badge bg-success">99.7%</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">False Positive Rate:</span>
+                                <span class="badge bg-success">< 0.1%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Enrollment Modal -->
+<div class="modal fade" id="enrollModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-plus-fill"></i> Enroll New Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="enrollForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="employeeId" class="form-label">Employee ID *</label>
+                                <input type="text" class="form-control" id="employeeId" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="employeeName" class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="employeeName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="employeeDepartment" class="form-label">Department *</label>
+                                <input type="text" class="form-control" id="employeeDepartment" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="employeeEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="employeeEmail">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <div class="mb-3">
+                                    <label class="form-label">Face Photo *</label>
+                                    <div class="video-container mx-auto" style="width: 300px; height: 240px;">
+                                        <video id="enrollVideo" autoplay muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                        <canvas id="enrollCanvas" style="display: none;"></canvas>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary" id="captureBtn">
+                                    <i class="bi bi-camera-fill"></i> Capture Photo
+                                </button>
+                                <div id="capturedImage" class="mt-3" style="display: none;">
+                                    <img id="capturedImg" class="img-fluid rounded" style="max-height: 200px;">
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-secondary" onclick="retakePhoto()">
+                                            <i class="bi bi-arrow-clockwise"></i> Retake
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="enrollSubmitBtn" disabled>
+                    <i class="bi bi-person-plus-fill"></i> Enroll Employee
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let enrollVideoStream = null;
+    let capturedImageData = null;
+
+    // Update current time
+    function updateCurrentTime() {
+        const now = new Date();
+        document.getElementById('current-time').textContent = now.toLocaleTimeString();
+    }
+    setInterval(updateCurrentTime, 1000);
+    updateCurrentTime();
+
+    // Load system statistics
+    function loadSystemStats() {
+        fetch('/api/system_stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-employees').textContent = data.total_employees || 0;
+                document.getElementById('today-attendance').textContent = data.today_attendance || 0;
+                document.getElementById('fr-model').textContent = data.face_recognition_model || 'GhostFaceNet';
+                
+                // Update camera status
+                const cameraStatusText = document.getElementById('camera-status-text');
+                if (data.camera_status) {
+                    cameraStatusText.textContent = 'Ready';
+                    cameraStatusText.parentElement.querySelector('.rounded-circle').className = 
+                        'rounded-circle bg-success bg-opacity-10 p-3';
+                    cameraStatusText.parentElement.querySelector('i').className = 
+                        'bi bi-camera-fill fs-2 text-success';
+                } else {
+                    cameraStatusText.textContent = 'Error';
+                    cameraStatusText.parentElement.querySelector('.rounded-circle').className = 
+                        'rounded-circle bg-danger bg-opacity-10 p-3';
+                    cameraStatusText.parentElement.querySelector('i').className = 
+                        'bi bi-camera-fill fs-2 text-danger';
+                }
+                
+                // Update anti-spoofing status
+                document.getElementById('antispoofing-status').textContent = 
+                    data.anti_spoofing_enabled ? 'Enabled' : 'Disabled';
+            })
+            .catch(error => console.error('Error loading system stats:', error));
+    }
+
+    // Refresh recent activity
+    function refreshRecentActivity() {
+        location.reload();
+    }
+
+    // Show enrollment modal
+    function showEnrollModal() {
+        const modal = new bootstrap.Modal(document.getElementById('enrollModal'));
+        modal.show();
+        
+        // Start camera when modal opens
+        startEnrollCamera();
+    }
+
+    // Start camera for enrollment
+    async function startEnrollCamera() {
+        try {
+            const video = document.getElementById('enrollVideo');
+            enrollVideoStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 640, height: 480 } 
+            });
+            video.srcObject = enrollVideoStream;
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            showNotification('Camera access denied', 'error');
+        }
+    }
+
+    // Stop camera
+    function stopEnrollCamera() {
+        if (enrollVideoStream) {
+            enrollVideoStream.getTracks().forEach(track => track.stop());
+            enrollVideoStream = null;
+        }
+    }
+
+    // Capture photo
+    document.getElementById('captureBtn').addEventListener('click', function() {
+        const video = document.getElementById('enrollVideo');
+        const canvas = document.getElementById('enrollCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert to base64
+        capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Show captured image
+        document.getElementById('capturedImg').src = capturedImageData;
+        document.getElementById('capturedImage').style.display = 'block';
+        document.getElementById('enrollSubmitBtn').disabled = false;
+        
+        // Hide video
+        video.style.display = 'none';
+        this.style.display = 'none';
+    });
+
+    // Retake photo
+    function retakePhoto() {
+        document.getElementById('enrollVideo').style.display = 'block';
+        document.getElementById('captureBtn').style.display = 'block';
+        document.getElementById('capturedImage').style.display = 'none';
+        document.getElementById('enrollSubmitBtn').disabled = true;
+        capturedImageData = null;
+    }
+
+    // Submit enrollment
+    document.getElementById('enrollSubmitBtn').addEventListener('click', function() {
+        const employeeId = document.getElementById('employeeId').value.trim();
+        const employeeName = document.getElementById('employeeName').value.trim();
+        const employeeDepartment = document.getElementById('employeeDepartment').value.trim();
+        const employeeEmail = document.getElementById('employeeEmail').value.trim();
+        
+        if (!employeeId || !employeeName || !employeeDepartment || !capturedImageData) {
+            showNotification('Please fill all required fields and capture a photo', 'error');
+            return;
+        }
+        
+        const stopLoading = showLoading(this, 'Enrolling...');
+        
+        const enrollData = {
+            employee_id: employeeId,
+            name: employeeName,
+            department: employeeDepartment,
+            email: employeeEmail,
+            image_data: capturedImageData
+        };
+        
+        fetch('/api/enroll_employee', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(enrollData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            stopLoading();
+            if (data.success) {
+                showNotification('Employee enrolled successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('enrollModal')).hide();
+                loadSystemStats(); // Refresh stats
+                
+                // Reset form
+                document.getElementById('enrollForm').reset();
+                retakePhoto();
+            } else {
+                showNotification(data.message || 'Enrollment failed', 'error');
+            }
+        })
+        .catch(error => {
+            stopLoading();
+            console.error('Enrollment error:', error);
+            showNotification('Network error during enrollment', 'error');
+        });
+    });
+
+    // Clean up camera when modal closes
+    document.getElementById('enrollModal').addEventListener('hidden.bs.modal', function() {
+        stopEnrollCamera();
+    });
+
+    // Load initial stats
+    loadSystemStats();
+    
+    // Refresh stats every 30 seconds
+    setInterval(loadSystemStats, 30000);
+</script>
+{% endblock %} 

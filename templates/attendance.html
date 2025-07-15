@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Attendance - Face Recognition Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .attendance-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .camera-feed {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        border-radius: 15px;
+        background: #000;
+    }
+    
+    .face-overlay {
+        position: absolute;
+        border: 3px solid #00ff00;
+        border-radius: 8px;
+        background: rgba(0, 255, 0, 0.1);
+        pointer-events: none;
+        animation: pulse-border 2s infinite;
+    }
+    
+    @keyframes pulse-border {
+        0% { border-color: #00ff00; }
+        50% { border-color: #ffff00; }
+        100% { border-color: #00ff00; }
+    }
+    
+    .recognition-status {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+        color: white;
+        backdrop-filter: blur(10px);
+    }
+    
+    .status-ready { background: rgba(40, 167, 69, 0.9); }
+    .status-processing { background: rgba(255, 193, 7, 0.9); }
+    .status-success { background: rgba(25, 135, 84, 0.9); }
+    .status-error { background: rgba(220, 53, 69, 0.9); }
+    
+    .attendance-result {
+        display: none;
+        animation: slideInUp 0.5s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .confidence-meter {
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #e9ecef;
+    }
+    
+    .confidence-bar {
+        height: 100%;
+        transition: width 0.3s ease;
+        background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+    }
+    
+    .guide-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 250px;
+        height: 300px;
+        border: 3px dashed rgba(255, 255, 255, 0.7);
+        border-radius: 15px;
+        pointer-events: none;
+        z-index: 5;
+    }
+    
+    .guide-text {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        text-align: center;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="attendance-container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0"><i class="bi bi-camera-fill"></i> Mark Attendance</h1>
+                    <p class="text-muted">Position your face in the camera to mark attendance</p>
+                </div>
+                <div>
+                    <span class="badge bg-success fs-6" id="time-display">
+                        <i class="bi bi-clock"></i> 
+                        <span id="current-time"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Camera Section -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-camera-video"></i> Live Camera Feed</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="toggleCamera()" id="cameraToggle">
+                            <i class="bi bi-camera-fill"></i> Start Camera
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="markAttendance()" id="markBtn" disabled>
+                            <i class="bi bi-person-check-fill"></i> Mark Attendance
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="video-container position-relative">
+                        <video id="cameraFeed" class="camera-feed" autoplay muted playsinline></video>
+                        <canvas id="canvasOverlay" style="display: none;"></canvas>
+                        
+                        <!-- Face detection guide -->
+                        <div class="guide-overlay" id="faceGuide">
+                            <div class="guide-text">Position your face here</div>
+                        </div>
+                        
+                        <!-- Recognition status -->
+                        <div class="recognition-status status-ready" id="recognitionStatus">
+                            <i class="bi bi-camera"></i> Ready
+                        </div>
+                        
+                        <!-- Anti-spoofing indicator -->
+                        <div class="position-absolute top-0 start-0 m-3">
+                            <span class="badge bg-info" id="antispoofingIndicator">
+                                <i class="bi bi-shield-check"></i> Anti-Spoofing Active
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="col-lg-4">
+            <!-- Attendance Result -->
+            <div class="card attendance-result" id="attendanceResult">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-check-circle-fill"></i> Attendance Marked</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 d-inline-flex">
+                            <i class="bi bi-person-fill fs-1 text-success"></i>
+                        </div>
+                    </div>
+                    <h4 class="mb-1" id="employeeName">John Doe</h4>
+                    <p class="text-muted mb-3" id="employeeDetails">ID: EMP001 | IT Department</p>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Recognition Confidence</small>
+                        <div class="confidence-meter">
+                            <div class="confidence-bar" id="confidenceBar" style="width: 0%"></div>
+                        </div>
+                        <span class="small text-muted" id="confidenceText">0%</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Timestamp</small>
+                        <div class="fw-bold" id="attendanceTime"></div>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-sm" onclick="markAnother()">
+                        <i class="bi bi-plus-circle"></i> Mark Another
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Result -->
+            <div class="card attendance-result" id="errorResult" style="display: none;">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Recognition Failed</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-person-x fs-1 text-danger"></i>
+                    </div>
+                    <h5 class="text-danger mb-3" id="errorMessage">Face not recognized</h5>
+                    <p class="text-muted small mb-3">
+                        Please ensure you are enrolled in the system and your face is clearly visible.
+                    </p>
+                    <button class="btn btn-primary btn-sm" onclick="tryAgain()">
+                        <i class="bi bi-arrow-clockwise"></i> Try Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="card" id="instructionsCard">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-1-circle-fill text-primary me-3 fs-5"></i>
+                                <span>Click "Start Camera" to begin</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-2-circle-fill text-primary me-3 fs-5"></i>
+                                <span>Position your face in the guide box</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-3-circle-fill text-primary me-3 fs-5"></i>
+                                <span>Look directly at the camera</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-4-circle-fill text-primary me-3 fs-5"></i>
+                                <span>Click "Mark Attendance"</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted">
+                        <div class="mb-2">
+                            <i class="bi bi-shield-check text-success"></i>
+                            <strong>Security Features:</strong>
+                        </div>
+                        <ul class="list-unstyled mb-0 ps-3">
+                            <li>• Liveness detection prevents photo spoofing</li>
+                            <li>• High-accuracy face recognition</li>
+                            <li>• Real-time processing</li>
+                            <li>• Encrypted data storage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Attendance -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Today's Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h4 text-success" id="todayPresent">0</div>
+                            <div class="small text-muted">Present</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 text-primary" id="totalEmployees">0</div>
+                            <div class="small text-muted">Total</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let cameraStream = null;
+    let isProcessing = false;
+    let cameraStarted = false;
+
+    // Update current time
+    function updateCurrentTime() {
+        const now = new Date();
+        document.getElementById('current-time').textContent = now.toLocaleTimeString();
+    }
+    setInterval(updateCurrentTime, 1000);
+    updateCurrentTime();
+
+    // Toggle camera
+    async function toggleCamera() {
+        const video = document.getElementById('cameraFeed');
+        const toggleBtn = document.getElementById('cameraToggle');
+        const markBtn = document.getElementById('markBtn');
+
+        if (!cameraStarted) {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                video.srcObject = cameraStream;
+                cameraStarted = true;
+                
+                toggleBtn.innerHTML = '<i class="bi bi-camera-fill"></i> Stop Camera';
+                toggleBtn.className = 'btn btn-sm btn-outline-danger';
+                markBtn.disabled = false;
+                
+                updateStatus('ready', 'Ready');
+                hideGuide();
+                
+            } catch (error) {
+                console.error('Camera access error:', error);
+                showNotification('Camera access denied. Please allow camera permissions.', 'error');
+                updateStatus('error', 'Camera Error');
+            }
+        } else {
+            stopCamera();
+        }
+    }
+
+    // Stop camera
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        
+        const video = document.getElementById('cameraFeed');
+        video.srcObject = null;
+        cameraStarted = false;
+        
+        const toggleBtn = document.getElementById('cameraToggle');
+        const markBtn = document.getElementById('markBtn');
+        
+        toggleBtn.innerHTML = '<i class="bi bi-camera-fill"></i> Start Camera';
+        toggleBtn.className = 'btn btn-sm btn-outline-primary';
+        markBtn.disabled = true;
+        
+        updateStatus('ready', 'Camera Stopped');
+        showGuide();
+    }
+
+    // Update recognition status
+    function updateStatus(type, message) {
+        const statusElement = document.getElementById('recognitionStatus');
+        statusElement.className = `recognition-status status-${type}`;
+        
+        const icons = {
+            ready: 'bi-camera',
+            processing: 'bi-hourglass-split',
+            success: 'bi-check-circle-fill',
+            error: 'bi-exclamation-triangle-fill'
+        };
+        
+        statusElement.innerHTML = `<i class="bi ${icons[type]}"></i> ${message}`;
+    }
+
+    // Show/hide face guide
+    function showGuide() {
+        document.getElementById('faceGuide').style.display = 'block';
+    }
+
+    function hideGuide() {
+        document.getElementById('faceGuide').style.display = 'none';
+    }
+
+    // Capture frame from video
+    function captureFrame() {
+        const video = document.getElementById('cameraFeed');
+        const canvas = document.getElementById('canvasOverlay');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        
+        return canvas.toDataURL('image/jpeg', 0.8);
+    }
+
+    // Mark attendance
+    async function markAttendance() {
+        if (isProcessing || !cameraStarted) return;
+        
+        isProcessing = true;
+        updateStatus('processing', 'Processing...');
+        
+        const markBtn = document.getElementById('markBtn');
+        const stopLoading = showLoading(markBtn, 'Processing...');
+        
+        try {
+            // Capture frame
+            const imageData = captureFrame();
+            
+            // Send to backend
+            const response = await fetch('/api/mark_attendance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image_data: imageData })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Show success result
+                showAttendanceResult(data);
+                updateStatus('success', 'Success!');
+                loadTodayStats();
+            } else {
+                // Show error result
+                showErrorResult(data.message);
+                updateStatus('error', 'Failed');
+            }
+            
+        } catch (error) {
+            console.error('Attendance marking error:', error);
+            showErrorResult('Network error. Please try again.');
+            updateStatus('error', 'Network Error');
+        } finally {
+            stopLoading();
+            isProcessing = false;
+        }
+    }
+
+    // Show attendance success result
+    function showAttendanceResult(data) {
+        const resultCard = document.getElementById('attendanceResult');
+        const instructionsCard = document.getElementById('instructionsCard');
+        const errorCard = document.getElementById('errorResult');
+        
+        // Update result data
+        document.getElementById('employeeName').textContent = data.employee.name;
+        document.getElementById('employeeDetails').textContent = 
+            `ID: ${data.employee.id} | ${data.employee.department}`;
+        document.getElementById('attendanceTime').textContent = 
+            new Date(data.timestamp).toLocaleString();
+        
+        // Update confidence
+        const confidence = Math.round(data.confidence * 100);
+        document.getElementById('confidenceBar').style.width = `${confidence}%`;
+        document.getElementById('confidenceText').textContent = `${confidence}%`;
+        
+        // Show success card
+        errorCard.style.display = 'none';
+        instructionsCard.style.display = 'none';
+        resultCard.style.display = 'block';
+        
+        // Success notification
+        showNotification(`Attendance marked for ${data.employee.name}`, 'success');
+    }
+
+    // Show error result
+    function showErrorResult(message) {
+        const resultCard = document.getElementById('attendanceResult');
+        const instructionsCard = document.getElementById('instructionsCard');
+        const errorCard = document.getElementById('errorResult');
+        
+        document.getElementById('errorMessage').textContent = message;
+        
+        // Show error card
+        resultCard.style.display = 'none';
+        instructionsCard.style.display = 'none';
+        errorCard.style.display = 'block';
+        
+        showNotification(message, 'error');
+    }
+
+    // Mark another attendance
+    function markAnother() {
+        const resultCard = document.getElementById('attendanceResult');
+        const instructionsCard = document.getElementById('instructionsCard');
+        const errorCard = document.getElementById('errorResult');
+        
+        resultCard.style.display = 'none';
+        errorCard.style.display = 'none';
+        instructionsCard.style.display = 'block';
+        
+        updateStatus('ready', 'Ready');
+    }
+
+    // Try again after error
+    function tryAgain() {
+        markAnother();
+    }
+
+    // Load today's statistics
+    async function loadTodayStats() {
+        try {
+            const response = await fetch('/api/system_stats');
+            const data = await response.json();
+            
+            document.getElementById('todayPresent').textContent = data.today_attendance || 0;
+            document.getElementById('totalEmployees').textContent = data.total_employees || 0;
+        } catch (error) {
+            console.error('Stats loading error:', error);
+        }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            if (cameraStarted && !isProcessing) {
+                markAttendance();
+            }
+        } else if (e.code === 'KeyC') {
+            toggleCamera();
+        }
+    });
+
+    // Initialize
+    loadTodayStats();
+    
+    // Auto-refresh stats every 30 seconds
+    setInterval(loadTodayStats, 30000);
+    
+    // Clean up camera on page unload
+    window.addEventListener('beforeunload', function() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %} 

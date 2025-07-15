@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  face-recognition-app:
+    build: .
+    container_name: face_recognition_attendance
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./face_templates:/app/face_templates
+      - ./logs:/app/logs
+      - /dev/video0:/dev/video0  # Camera access
+    environment:
+      - DATABASE_URL=sqlite:///data/attendance.db
+      - FLASK_ENV=production
+      - SECRET_KEY=your-secret-key-change-this
+      - FACE_RECOGNITION_MODEL=GhostFaceNet
+      - ANTI_SPOOFING_ENABLED=true
+      - MAX_UPLOAD_SIZE=16777216  # 16MB
+    devices:
+      - /dev/video0:/dev/video0  # Camera device
+    privileged: true  # Required for camera access
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - face_recognition_network
+
+  postgres:
+    image: postgres:13
+    container_name: face_recognition_db
+    environment:
+      - POSTGRES_DB=attendance_db
+      - POSTGRES_USER=face_user
+      - POSTGRES_PASSWORD=secure_password_change_this
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - face_recognition_network
+
+  adminer:
+    image: adminer
+    container_name: face_recognition_adminer
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - face_recognition_network
+
+volumes:
+  postgres_data:
+
+networks:
+  face_recognition_network:
+    driver: bridge 
