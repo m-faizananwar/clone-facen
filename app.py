@@ -352,5 +352,52 @@ def get_attendance():
     """Get attendance records"""
     return jsonify(attendance_system.attendance)
 
+@app.route('/detect', methods=['POST'])
+def detect():
+    """Detect faces and return bounding boxes and liveness (spoofing) status"""
+    try:
+        data = request.json
+        image_data = data.get('image')
+        if not image_data:
+            return jsonify({"success": False, "message": "Image data required"})
+        # Decode base64 image
+        image_bytes = base64.b64decode(image_data.split(',')[1])
+        image = Image.open(io.BytesIO(image_bytes))
+        temp_path = "temp_detect.jpg"
+        image.save(temp_path)
+        try:
+            faces = DeepFace.extract_faces(
+                img_path=temp_path,
+                detector_backend="opencv",
+                enforce_detection=False,
+                anti_spoofing=True
+            )
+            results = []
+            for face in faces:
+                # face can be dict or object
+                if isinstance(face, dict):
+                    area = face.get('facial_area') or face.get('facialArea')
+                    is_real = face.get('is_real', None)
+                else:
+                    area = getattr(face, 'facial_area', None)
+                    is_real = getattr(face, 'is_real', None)
+                if area:
+                    results.append({
+                        "x": area.get('x', 0),
+                        "y": area.get('y', 0),
+                        "w": area.get('w', 0),
+                        "h": area.get('h', 0),
+                        "is_real": is_real
+                    })
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return jsonify({"success": True, "faces": results})
+        except Exception as e:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return jsonify({"success": False, "message": f"Detection error: {str(e)}"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001) 

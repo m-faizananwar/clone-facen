@@ -53,7 +53,19 @@
         }
         
         #canvas {
-            display: none;
+            position: absolute;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .detection-feedback {
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
         }
         
         .controls {
@@ -215,6 +227,7 @@
                     <video id="video" autoplay playsinline></video>
                     <canvas id="canvas"></canvas>
                 </div>
+                <div id="detectionFeedback" class="detection-feedback"></div>
                 
                 <div class="controls">
                     <button id="startCamera" class="btn">Start Camera</button>
@@ -282,6 +295,12 @@
         let realtimeMode = false;
         let lastRecognized = {};
         const COOLDOWN_SECONDS = 30;
+        let detectionInterval = null;
+        let lastDetection = { faces: [], timestamp: 0 };
+        let stableRealFaceSince = null;
+        let lastRecognitionTrigger = 0;
+        const DETECTION_INTERVAL_MS = 200;
+        const RECOGNITION_STABLE_MS = 1000;
         
         // DOM elements
         const startCameraBtn = document.getElementById('startCamera');
@@ -299,6 +318,7 @@
         const attendanceLog = document.getElementById('attendanceLog');
         const toggleRealtimeBtn = document.getElementById('toggleRealtime');
         const realtimeStatus = document.getElementById('realtimeStatus');
+        const detectionFeedback = document.getElementById('detectionFeedback');
         
         // Event listeners
         startCameraBtn.addEventListener('click', startCamera);
@@ -326,6 +346,11 @@
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                 });
+                
+                // Start detection overlay
+                if (!detectionInterval) {
+                    detectionInterval = setInterval(liveDetect, DETECTION_INTERVAL_MS);
+                }
                 
             } catch (err) {
                 console.error('Error accessing camera:', err);
@@ -564,6 +589,74 @@
         
         function showLoading(show) {
             loadingIndicator.style.display = show ? 'block' : 'none';
+        }
+        
+        function drawDetections(faces) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let feedback = '';
+            if (!faces || faces.length === 0) {
+                feedback = 'No face detected';
+                detectionFeedback.style.color = '#888';
+            } else {
+                faces.forEach(face => {
+                    let color = '#FFD600'; // yellow for unknown
+                    if (face.is_real === true) color = '#28a745'; // green
+                    else if (face.is_real === false) color = '#dc3545'; // red
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = color;
+                    ctx.beginPath();
+                    ctx.rect(face.x, face.y, face.w, face.h);
+                    ctx.stroke();
+                    // Draw label
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = color;
+                    let label = face.is_real === true ? 'Real Face' : (face.is_real === false ? 'Spoofing' : 'Unknown');
+                    ctx.fillText(label, face.x, face.y - 8);
+                    feedback = label;
+                });
+            }
+            detectionFeedback.textContent = feedback;
+        }
+
+        async function liveDetect() {
+            if (video.videoWidth === 0 || video.videoHeight === 0) return;
+            // Only send detection if not processing recognition
+            if (isProcessing) return;
+            // Get frame
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            const imageData = canvas.toDataURL('image/jpeg', 0.7);
+            try {
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    drawDetections(result.faces);
+                    // Check for stable real face
+                    const realFace = result.faces.find(f => f.is_real === true);
+                    const now = Date.now();
+                    if (realFace) {
+                        if (!stableRealFaceSince) stableRealFaceSince = now;
+                        // Only trigger recognition if stable for RECOGNITION_STABLE_MS and not recently triggered
+                        if (now - stableRealFaceSince > RECOGNITION_STABLE_MS && now - lastRecognitionTrigger > RECOGNITION_STABLE_MS) {
+                            lastRecognitionTrigger = now;
+                            stableRealFaceSince = null;
+                            // Trigger recognition (simulate click)
+                            recognizeFace();
+                        }
+                    } else {
+                        stableRealFaceSince = null;
+                    }
+                } else {
+                    drawDetections([]);
+                }
+            } catch (e) {
+                drawDetections([]);
+            }
         }
         
         // Real-time attendance mode
