@@ -310,13 +310,15 @@ def add_employee():
         data = request.json
         name = data.get('name')
         image_data = data.get('image')
-        
         if not name or not image_data:
             return jsonify({"success": False, "message": "Name and image are required"})
-        
+        # Duplicate check (case-insensitive, trimmed)
+        name_clean = name.strip().lower()
+        for existing_name in attendance_system.employees.keys():
+            if existing_name.strip().lower() == name_clean:
+                return jsonify({"success": False, "message": "Employee with this name already exists."})
         success, message = attendance_system.add_employee(name, image_data)
         return jsonify({"success": success, "message": message})
-    
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"})
 
@@ -328,6 +330,11 @@ def add_employee_file():
         file = request.files.get('file')
         if not name or not file:
             return jsonify({"success": False, "message": "Name and file are required"})
+        # Duplicate check (case-insensitive, trimmed)
+        name_clean = name.strip().lower()
+        for existing_name in attendance_system.employees.keys():
+            if existing_name.strip().lower() == name_clean:
+                return jsonify({"success": False, "message": "Employee with this name already exists."})
         # Read file and convert to base64
         image_bytes = file.read()
         image_data = 'data:image/jpeg;base64,' + base64.b64encode(image_bytes).decode('utf-8')
