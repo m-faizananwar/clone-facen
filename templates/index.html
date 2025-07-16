@@ -6,84 +6,212 @@
     <title>Face Recognition Attendance System</title>
     <link rel="stylesheet" href="/static/index.css">
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+    <style>
+        .meet-main {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 80vh;
+            gap: 32px;
+            margin-top: 48px;
+        }
+        .meet-video-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 2 1 0;
+        }
+        .meet-video-container {
+            position: relative;
+            width: 640px;
+            height: 400px;
+            background: #111217;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 24px;
+            background: #000;
+            display: block;
+        }
+        #canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .meet-controls {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            margin-top: 0;
+        }
+        .meet-controls .btn {
+            font-size: 1.1rem;
+            padding: 14px 28px;
+            border-radius: 50px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+        }
+        .meet-feedback {
+            margin-top: 18px;
+            min-height: 32px;
+            text-align: center;
+        }
+        .meet-sidepanel {
+            flex: 1 1 0;
+            min-width: 340px;
+            background: #23272f;
+            border-radius: 18px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+            padding: 28px 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .sidepanel-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .sidepanel-toggle {
+            display: none;
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #4f8cff;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+        @media (max-width: 1100px) {
+            .meet-main { flex-direction: column; align-items: center; gap: 18px; }
+            .meet-video-container { width: 98vw; max-width: 98vw; height: 240px; }
+            .meet-sidepanel { max-width: 98vw; min-width: unset; margin-top: 18px; }
+        }
+        @media (max-width: 700px) {
+            .meet-video-container { width: 100vw; height: 180px; border-radius: 12px; }
+            .meet-sidepanel { padding: 14px 6px; border-radius: 10px; }
+        }
+    </style>
 </head>
 <body class="dark-mode">
     <nav class="topnav">
         <div class="brand">Face Attendance</div>
         <div class="nav-tabs">
-            <button class="tab-btn active" id="tab-today">Today's Attendance</button>
-            <button class="tab-btn" id="tab-past">Past Attendance</button>
+            <a href="/" class="tab-btn nav-link active">Attendance Monitoring</a>
+            <a href="/employees" class="tab-btn nav-link">Employee Management</a>
         </div>
     </nav>
-    <div class="main-layout">
-        <div class="left-panel">
-            <div class="card camera-card">
-                <div class="camera-header">
-                    <span class="camera-title">Camera</span>
-                    <span id="detectionFeedback" class="detection-feedback"></span>
-                </div>
-                <div class="camera-container">
-                    <video id="video" autoplay playsinline></video>
-                    <canvas id="canvas"></canvas>
-                </div>
-                <div class="camera-controls">
-                    <button id="startCamera" class="btn primary">Start Camera</button>
-                    <button id="recognizeFace" class="btn success" disabled>Recognize Face</button>
-                    <button id="captureForEmployee" class="btn warning" disabled>Capture for New Employee</button>
-                    <button id="toggleRealtime" class="btn success" disabled>Start Real-Time Attendance</button>
-                </div>
+    <div class="meet-main">
+        <div class="meet-video-section">
+            <div class="meet-video-container">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="meet-controls">
+                <button id="startCamera" class="btn primary">Start Camera</button>
+                <button id="recognizeFace" class="btn success" disabled>Recognize Face</button>
+                <button id="toggleRealtime" class="btn success" disabled>Start Real-Time Attendance</button>
+            </div>
+            <div class="meet-feedback">
+                <span id="detectionFeedback" class="detection-feedback"></span>
                 <div id="recognitionStatus" class="status-box" style="display: none;"></div>
                 <div class="loading" id="loadingIndicator">Processing...</div>
             </div>
         </div>
-        <div class="right-panel">
-            <div class="card info-card">
-                <div class="info-header">
-                    <span class="info-title">System Info</span>
-                </div>
-                <div id="lastRecognition" class="status-box status-info" style="display: none;">
-                    <strong>Last Recognition:</strong><br>
-                    <span id="lastRecognitionText">None</span>
-                </div>
-                <div id="attendanceStatus" class="status-box" style="display: none;"></div>
-                <div class="add-employee">
-                    <h4>Add New Employee</h4>
-                    <div class="form-group">
-                        <label for="employeeName">Employee Name:</label>
-                        <input type="text" id="employeeName" placeholder="Enter employee name">
-                    </div>
-                    <button id="addEmployee" class="btn primary" disabled>Add Employee (Capture First)</button>
-                    <div id="addEmployeeStatus" style="margin-top: 10px;"></div>
-                </div>
-                <div class="employee-list-section">
-                    <h4>Registered Employees</h4>
-                    <div id="employeeList" class="employee-list">
-                        Loading employees...
-                    </div>
-                </div>
+        <div class="meet-sidepanel" id="sidePanel">
+            <div class="sidepanel-header">Attendance Log</div>
+            <div id="lastRecognition" class="status-box status-info" style="display: none;">
+                <strong>Last Recognition:</strong><br>
+                <span id="lastRecognitionText">None</span>
             </div>
-        </div>
-        <div class="attendance-panel card">
+            <div id="attendanceStatus" class="status-box" style="display: none;"></div>
             <div class="attendance-tabs">
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <button class="tab-btn active" id="tab-today">Today's Attendance</button>
+                    <button class="tab-btn" id="tab-past">Past Attendance (by Date)</button>
+                    <button class="tab-btn" id="tab-allpast">All Past Attendance</button>
+                </div>
                 <div id="attendance-today" class="attendance-tab active">
-                    <h3>Today's Attendance</h3>
-                    <div id="attendanceLog" class="attendance-log">
-                        Loading attendance records...
+                    <div class="attendance-table">
+                        <div class="attendance-table-header">
+                            <div>Name</div>
+                            <div>Event</div>
+                            <div>Time</div>
+                        </div>
+                        <div id="attendanceLog" class="attendance-table-body">
+                            Loading attendance records...
+                        </div>
                     </div>
                 </div>
                 <div id="attendance-past" class="attendance-tab">
-                    <h3>Past Attendance</h3>
                     <div class="past-attendance-controls">
                         <input type="date" id="pastDatePicker">
                         <button id="loadPastAttendance" class="btn primary">Load</button>
                     </div>
-                    <div id="pastAttendanceLog" class="attendance-log">
-                        Select a date to view past attendance.
+                    <div class="attendance-table">
+                        <div class="attendance-table-header">
+                            <div>Name</div>
+                            <div>Event</div>
+                            <div>Time</div>
+                        </div>
+                        <div id="pastAttendanceLog" class="attendance-table-body">
+                            Select a date to view past attendance.
+                        </div>
                     </div>
                 </div>
+                <div id="attendance-allpast" class="attendance-tab">
+                    <div class="attendance-table">
+                        <div class="attendance-table-header">
+                            <div>Name</div>
+                            <div>Event</div>
+                            <div>Time</div>
+                        </div>
+                        <div id="allPastAttendanceLog" class="attendance-table-body">
+                            Loading all attendance records...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:10px;text-align:right;">
+                <button class="sidepanel-toggle" id="togglePanelBtn" title="Toggle Panel">&lt;</button>
             </div>
         </div>
     </div>
     <script src="/static/index.js"></script>
+    <script>
+    // Collapsible side panel for mobile
+    const sidePanel = document.getElementById('sidePanel');
+    const togglePanelBtn = document.getElementById('togglePanelBtn');
+    let panelOpen = true;
+    function updatePanel() {
+        if (window.innerWidth < 900) {
+            sidePanel.style.display = panelOpen ? 'block' : 'none';
+            togglePanelBtn.style.display = 'inline-block';
+            togglePanelBtn.textContent = panelOpen ? '<' : '>';
+        } else {
+            sidePanel.style.display = 'block';
+            togglePanelBtn.style.display = 'none';
+        }
+    }
+    togglePanelBtn.addEventListener('click', () => {
+        panelOpen = !panelOpen;
+        updatePanel();
+    });
+    window.addEventListener('resize', updatePanel);
+    document.addEventListener('DOMContentLoaded', updatePanel);
+    </script>
 </body>
 </html> 

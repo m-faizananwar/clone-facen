@@ -1,41 +1,32 @@
+// --- Camera & Attendance Monitoring Only (for main page) ---
 let video = document.getElementById('video');
 let canvas = document.getElementById('canvas');
-let ctx = canvas.getContext('2d');
+let ctx = canvas ? canvas.getContext('2d') : null;
 let stream = null;
-let capturedImage = null;
 let isProcessing = false;
 let realtimeInterval = null;
 let realtimeMode = false;
 let lastRecognized = {};
 const COOLDOWN_SECONDS = 30;
 let detectionInterval = null;
-let lastDetection = { faces: [], timestamp: 0 };
 let stableRealFaceSince = null;
 let lastRecognitionTrigger = 0;
-const DETECTION_INTERVAL_MS = 100; // was 200, now 100ms for smoother detection
+const DETECTION_INTERVAL_MS = 100;
 const RECOGNITION_STABLE_MS = 1000;
-let detectionInFlight = false; // Add this flag to debounce detection requests
+let detectionInFlight = false;
 let latestDetectionFaces = [];
 
-// DOM elements
+// DOM elements (main page only)
 const startCameraBtn = document.getElementById('startCamera');
 const recognizeFaceBtn = document.getElementById('recognizeFace');
-const captureForEmployeeBtn = document.getElementById('captureForEmployee');
-const addEmployeeBtn = document.getElementById('addEmployee');
-const employeeNameInput = document.getElementById('employeeName');
+const toggleRealtimeBtn = document.getElementById('toggleRealtime');
 const recognitionStatus = document.getElementById('recognitionStatus');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const lastRecognition = document.getElementById('lastRecognition');
 const lastRecognitionText = document.getElementById('lastRecognitionText');
 const attendanceStatus = document.getElementById('attendanceStatus');
-const addEmployeeStatus = document.getElementById('addEmployeeStatus');
-const employeeList = document.getElementById('employeeList');
 const attendanceLog = document.getElementById('attendanceLog');
-const toggleRealtimeBtn = document.getElementById('toggleRealtime');
-const realtimeStatus = document.getElementById('realtimeStatus');
 const detectionFeedback = document.getElementById('detectionFeedback');
-
-// Tab switching and past attendance logic
 const tabTodayBtn = document.getElementById('tab-today');
 const tabPastBtn = document.getElementById('tab-past');
 const attendanceTodayTab = document.getElementById('attendance-today');
@@ -44,47 +35,70 @@ const pastAttendanceLog = document.getElementById('pastAttendanceLog');
 const pastDatePicker = document.getElementById('pastDatePicker');
 const loadPastAttendanceBtn = document.getElementById('loadPastAttendance');
 
-// Event listeners
-startCameraBtn.addEventListener('click', startCamera);
-recognizeFaceBtn.addEventListener('click', recognizeFace);
-captureForEmployeeBtn.addEventListener('click', captureForEmployee);
-addEmployeeBtn.addEventListener('click', addEmployee);
-toggleRealtimeBtn.addEventListener('click', toggleRealtimeMode);
+// Tab switching (now 3 tabs)
+const tabAllPastBtn = document.getElementById('tab-allpast');
+const attendanceAllPastTab = document.getElementById('attendance-allpast');
+const allPastAttendanceLog = document.getElementById('allPastAttendanceLog');
 
-// Tab switching
-if (tabTodayBtn && tabPastBtn && attendanceTodayTab && attendancePastTab) {
+// --- Event listeners (main page only) ---
+if (startCameraBtn) startCameraBtn.addEventListener('click', startCamera);
+if (recognizeFaceBtn) recognizeFaceBtn.addEventListener('click', recognizeFace);
+if (toggleRealtimeBtn) toggleRealtimeBtn.addEventListener('click', toggleRealtimeMode);
+if (loadPastAttendanceBtn) loadPastAttendanceBtn.addEventListener('click', loadPastAttendance);
+if (pastDatePicker) pastDatePicker.addEventListener('change', loadPastAttendance);
+
+// Tab switching (now 3 tabs)
+if (tabTodayBtn && tabPastBtn && tabAllPastBtn && attendanceTodayTab && attendancePastTab && attendanceAllPastTab) {
     tabTodayBtn.addEventListener('click', () => {
         tabTodayBtn.classList.add('active');
         tabPastBtn.classList.remove('active');
+        tabAllPastBtn.classList.remove('active');
         attendanceTodayTab.classList.add('active');
         attendancePastTab.classList.remove('active');
+        attendanceAllPastTab.classList.remove('active');
     });
     tabPastBtn.addEventListener('click', () => {
         tabPastBtn.classList.add('active');
         tabTodayBtn.classList.remove('active');
+        tabAllPastBtn.classList.remove('active');
         attendancePastTab.classList.add('active');
         attendanceTodayTab.classList.remove('active');
+        attendanceAllPastTab.classList.remove('active');
         loadPastAttendance();
+    });
+    tabAllPastBtn.addEventListener('click', () => {
+        tabAllPastBtn.classList.add('active');
+        tabTodayBtn.classList.remove('active');
+        tabPastBtn.classList.remove('active');
+        attendanceAllPastTab.classList.add('active');
+        attendanceTodayTab.classList.remove('active');
+        attendancePastTab.classList.remove('active');
+        loadAllPastAttendance();
     });
 }
 
-// Start camera
+// --- Camera functions ---
 async function startCamera() {
     try {
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { width: 640, height: 480 } 
         });
-        video.srcObject = stream;
-        startCameraBtn.textContent = 'Camera Started';
-        startCameraBtn.disabled = true;
-        recognizeFaceBtn.disabled = false;
-        captureForEmployeeBtn.disabled = false;
-        toggleRealtimeBtn.disabled = false;
+        if (video) video.srcObject = stream;
+        if (startCameraBtn) {
+            startCameraBtn.textContent = 'Camera Started';
+            startCameraBtn.disabled = true;
+        }
+        if (recognizeFaceBtn) recognizeFaceBtn.disabled = false;
+        if (toggleRealtimeBtn) toggleRealtimeBtn.disabled = false;
         // Set canvas size to match video
-        video.addEventListener('loadedmetadata', () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-        });
+        if (video) {
+            video.addEventListener('loadedmetadata', () => {
+                if (canvas) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                }
+            });
+        }
         // Start detection overlay
         if (!detectionInterval) {
             detectionInterval = setInterval(liveDetect, DETECTION_INTERVAL_MS);
@@ -96,18 +110,16 @@ async function startCamera() {
     }
 }
 
-// Capture current frame
 function captureFrame() {
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-        return null;
-    }
+    if (!video || !canvas || !ctx) return null;
+    if (video.videoWidth === 0 || video.videoHeight === 0) return null;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
     return canvas.toDataURL('image/jpeg', 0.8);
 }
 
-// Recognize face
+// --- Recognition ---
 async function recognizeFace() {
     if (isProcessing) return;
     const imageData = captureFrame();
@@ -117,29 +129,24 @@ async function recognizeFace() {
     }
     isProcessing = true;
     showLoading(true);
-    recognizeFaceBtn.disabled = true;
+    if (recognizeFaceBtn) recognizeFaceBtn.disabled = true;
     try {
         const response = await fetch('/recognize', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image: imageData })
         });
         const result = await response.json();
-        // Check for antispoofing detection first
         if (result.spoofing_detected) {
             showStatus(`🚫 ${result.message}`, 'error');
             return;
         }
         if (result.success) {
             showStatus(`✅ Recognized: ${result.employee} (Real face verified)`, 'success');
-            lastRecognitionText.textContent = `${result.employee} - ${new Date().toLocaleTimeString()} (Anti-spoofing: PASSED)`;
-            lastRecognition.style.display = 'block';
-            // Automatically mark attendance
+            if (lastRecognitionText) lastRecognitionText.textContent = `${result.employee} - ${new Date().toLocaleTimeString()} (Anti-spoofing: PASSED)`;
+            if (lastRecognition) lastRecognition.style.display = 'block';
             markAttendance(result.employee);
         } else {
-            // Face not recognized but antispoofing passed
             showStatus(`❓ ${result.message} (Real face detected)`, 'error');
         }
     } catch (error) {
@@ -147,24 +154,22 @@ async function recognizeFace() {
     } finally {
         isProcessing = false;
         showLoading(false);
-        recognizeFaceBtn.disabled = false;
+        if (recognizeFaceBtn) recognizeFaceBtn.disabled = false;
     }
 }
 
-// Mark attendance
+// --- Attendance ---
 async function markAttendance(employeeName) {
     try {
         const response = await fetch('/mark_attendance', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ employee: employeeName })
         });
         const result = await response.json();
         if (result.success) {
             showAttendanceStatus(result.message, 'success');
-            loadAttendance(); // Refresh attendance log
+            loadAttendance();
         } else {
             showAttendanceStatus(result.message, 'error');
         }
@@ -173,121 +178,64 @@ async function markAttendance(employeeName) {
     }
 }
 
-// Capture for new employee
-function captureForEmployee() {
-    const imageData = captureFrame();
-    if (!imageData) {
-        showStatus('Please start camera first', 'error');
-        return;
-    }
-    capturedImage = imageData;
-    addEmployeeBtn.disabled = false;
-    addEmployeeBtn.textContent = 'Add Employee (Image Captured)';
-    showAddEmployeeStatus('📸 Image captured! Enter name and click Add Employee. (Antispoofing will be verified)', 'success');
+// --- Attendance Log ---
+function badge(type) {
+    const color = type === 'IN' ? '#22c55e' : '#4f8cff';
+    return `<span class="badge badge-${type.toLowerCase()}" style="background:${color};color:#fff;padding:2px 10px;border-radius:12px;font-size:0.98em;">${type}</span>`;
 }
 
-// Add new employee
-async function addEmployee() {
-    const name = employeeNameInput.value.trim();
-    if (!name) {
-        showAddEmployeeStatus('Please enter employee name', 'error');
-        return;
-    }
-    if (!capturedImage) {
-        showAddEmployeeStatus('Please capture image first', 'error');
-        return;
-    }
-    try {
-        const response = await fetch('/add_employee', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: name,
-                image: capturedImage
-            })
-        });
-        const result = await response.json();
-        if (result.success) {
-            showAddEmployeeStatus(`✅ ${result.message}`, 'success');
-            employeeNameInput.value = '';
-            capturedImage = null;
-            addEmployeeBtn.disabled = true;
-            addEmployeeBtn.textContent = 'Add Employee (Capture First)';
-            loadEmployees(); // Refresh employee list
-        } else {
-            // Check if it's an antispoofing error
-            if (result.message.includes('Spoofing detected') || result.message.includes('spoofing')) {
-                showAddEmployeeStatus(`🚫 ${result.message}`, 'error');
-            } else {
-                showAddEmployeeStatus(`❌ ${result.message}`, 'error');
-            }
-        }
-    } catch (error) {
-        showAddEmployeeStatus('Failed to add employee: ' + error.message, 'error');
-    }
-}
-
-// Load employees
-async function loadEmployees() {
-    try {
-        const response = await fetch('/get_employees');
-        const employees = await response.json();
-        employeeList.innerHTML = '';
-        if (Object.keys(employees).length === 0) {
-            employeeList.innerHTML = '<div class="employee-item">No employees registered</div>';
-        } else {
-            for (const [name, info] of Object.entries(employees)) {
-                const item = document.createElement('div');
-                item.className = 'employee-item';
-                item.textContent = `${name} (ID: ${info.id})`;
-                employeeList.appendChild(item);
-            }
-        }
-    } catch (error) {
-        employeeList.innerHTML = '<div class="employee-item">Error loading employees</div>';
-    }
-}
-
-// Load attendance
 async function loadAttendance() {
+    if (!attendanceLog) return;
     try {
         const response = await fetch('/get_attendance');
         const attendance = await response.json();
         attendanceLog.innerHTML = '';
-        // Filter today's attendance
         const today = new Date().toISOString().split('T')[0];
         const todayAttendance = attendance.filter(record => record.date === today);
         if (todayAttendance.length === 0) {
-            attendanceLog.innerHTML = '<div class="attendance-item">No attendance records for today</div>';
+            attendanceLog.innerHTML = '<div class="attendance-table-row empty">No attendance records for today</div>';
         } else {
+            let rowIdx = 0;
             todayAttendance.forEach(record => {
-                const item = document.createElement('div');
-                item.className = 'attendance-item';
-                let html = `<strong>${record.employee}</strong><ul style='margin:0 0 0 20px;padding:0;'>`;
                 if (record.events && Array.isArray(record.events)) {
                     record.events.forEach(ev => {
-                        html += `<li>${ev.type.toUpperCase()} at ${ev.time}</li>`;
+                        const row = document.createElement('div');
+                        row.className = 'attendance-table-row';
+                        if (rowIdx % 2 === 1) row.classList.add('alt');
+                        row.style.display = 'flex';
+                        row.style.alignItems = 'center';
+                        row.innerHTML = `
+                            <div style='flex:2;'>${record.employee}</div>
+                            <div style='flex:1;'>${badge(ev.type.toUpperCase())}</div>
+                            <div style='flex:1;'>${ev.time}</div>
+                        `;
+                        attendanceLog.appendChild(row);
+                        rowIdx++;
                     });
                 } else if (record.time) {
-                    // legacy record
-                    html += `<li>IN at ${record.time}</li>`;
+                    const row = document.createElement('div');
+                    row.className = 'attendance-table-row';
+                    if (rowIdx % 2 === 1) row.classList.add('alt');
+                    row.style.display = 'flex';
+                    row.style.alignItems = 'center';
+                    row.innerHTML = `
+                        <div style='flex:2;'>${record.employee}</div>
+                        <div style='flex:1;'>${badge('IN')}</div>
+                        <div style='flex:1;'>${record.time}</div>
+                    `;
+                    attendanceLog.appendChild(row);
+                    rowIdx++;
                 }
-                html += '</ul>';
-                item.innerHTML = html;
-                attendanceLog.appendChild(item);
             });
         }
     } catch (error) {
-        attendanceLog.innerHTML = '<div class="attendance-item">Error loading attendance</div>';
+        attendanceLog.innerHTML = '<div class="attendance-table-row empty">Error loading attendance</div>';
     }
 }
 
-// Load all past attendance logs, optionally filtered by date
 async function loadPastAttendance() {
+    if (!pastAttendanceLog) return;
     try {
-        pastAttendanceLog.innerHTML = '<div class="attendance-item">Loading...</div>';
         const response = await fetch('/get_attendance');
         const attendance = await response.json();
         let filtered = attendance;
@@ -296,39 +244,95 @@ async function loadPastAttendance() {
             filtered = attendance.filter(record => record.date === selectedDate);
         }
         if (filtered.length === 0) {
-            pastAttendanceLog.innerHTML = '<div class="attendance-item">No attendance records found.</div>';
+            pastAttendanceLog.innerHTML = '<div class="attendance-table-row empty">No attendance records found.</div>';
         } else {
-            pastAttendanceLog.innerHTML = '';
+            let rowIdx = 0;
             filtered.forEach(record => {
-                const item = document.createElement('div');
-                item.className = 'attendance-item';
-                let html = `<strong>${record.employee}</strong> <span style='font-size:0.95em;color:#4f8cff;'>(${record.date})</span><ul style='margin:0 0 0 20px;padding:0;'>`;
                 if (record.events && Array.isArray(record.events)) {
                     record.events.forEach(ev => {
-                        html += `<li>${ev.type.toUpperCase()} at ${ev.time}</li>`;
+                        const row = document.createElement('div');
+                        row.className = 'attendance-table-row';
+                        if (rowIdx % 2 === 1) row.classList.add('alt');
+                        row.style.display = 'flex';
+                        row.style.alignItems = 'center';
+                        row.innerHTML = `
+                            <div style='flex:2;'>${record.employee}</div>
+                            <div style='flex:1;'>${badge(ev.type.toUpperCase())}</div>
+                            <div style='flex:1;'>${ev.time}</div>
+                        `;
+                        pastAttendanceLog.appendChild(row);
+                        rowIdx++;
                     });
                 } else if (record.time) {
-                    html += `<li>IN at ${record.time}</li>`;
+                    const row = document.createElement('div');
+                    row.className = 'attendance-table-row';
+                    if (rowIdx % 2 === 1) row.classList.add('alt');
+                    row.style.display = 'flex';
+                    row.style.alignItems = 'center';
+                    row.innerHTML = `
+                        <div style='flex:2;'>${record.employee}</div>
+                        <div style='flex:1;'>${badge('IN')}</div>
+                        <div style='flex:1;'>${record.time}</div>
+                    `;
+                    pastAttendanceLog.appendChild(row);
+                    rowIdx++;
                 }
-                html += '</ul>';
-                item.innerHTML = html;
-                pastAttendanceLog.appendChild(item);
             });
         }
     } catch (error) {
-        pastAttendanceLog.innerHTML = '<div class="attendance-item">Error loading past attendance</div>';
+        pastAttendanceLog.innerHTML = '<div class="attendance-table-row empty">Error loading past attendance</div>';
     }
 }
 
-if (loadPastAttendanceBtn) {
-    loadPastAttendanceBtn.addEventListener('click', loadPastAttendance);
-}
-if (pastDatePicker) {
-    pastDatePicker.addEventListener('change', loadPastAttendance);
+async function loadAllPastAttendance() {
+    if (!allPastAttendanceLog) return;
+    try {
+        const response = await fetch('/get_attendance');
+        const attendance = await response.json();
+        if (attendance.length === 0) {
+            allPastAttendanceLog.innerHTML = '<div class="attendance-table-row empty">No attendance records found.</div>';
+        } else {
+            let rowIdx = 0;
+            attendance.forEach(record => {
+                if (record.events && Array.isArray(record.events)) {
+                    record.events.forEach(ev => {
+                        const row = document.createElement('div');
+                        row.className = 'attendance-table-row';
+                        if (rowIdx % 2 === 1) row.classList.add('alt');
+                        row.style.display = 'flex';
+                        row.style.alignItems = 'center';
+                        row.innerHTML = `
+                            <div style='flex:2;'>${record.employee}</div>
+                            <div style='flex:1;'>${badge(ev.type.toUpperCase())}</div>
+                            <div style='flex:1;'>${ev.time} <span style='color:#888;font-size:0.95em;'>(${record.date})</span></div>
+                        `;
+                        allPastAttendanceLog.appendChild(row);
+                        rowIdx++;
+                    });
+                } else if (record.time) {
+                    const row = document.createElement('div');
+                    row.className = 'attendance-table-row';
+                    if (rowIdx % 2 === 1) row.classList.add('alt');
+                    row.style.display = 'flex';
+                    row.style.alignItems = 'center';
+                    row.innerHTML = `
+                        <div style='flex:2;'>${record.employee}</div>
+                        <div style='flex:1;'>${badge('IN')}</div>
+                        <div style='flex:1;'>${record.time} <span style='color:#888;font-size:0.95em;'>(${record.date})</span></div>
+                    `;
+                    allPastAttendanceLog.appendChild(row);
+                    rowIdx++;
+                }
+            });
+        }
+    } catch (error) {
+        allPastAttendanceLog.innerHTML = '<div class="attendance-table-row empty">Error loading all past attendance</div>';
+    }
 }
 
-// Utility functions
+// --- Utility functions ---
 function showStatus(message, type) {
+    if (!recognitionStatus) return;
     recognitionStatus.textContent = message;
     recognitionStatus.className = `status-box status-${type}`;
     recognitionStatus.style.display = 'block';
@@ -336,8 +340,8 @@ function showStatus(message, type) {
         recognitionStatus.style.display = 'none';
     }, 5000);
 }
-
 function showAttendanceStatus(message, type) {
+    if (!attendanceStatus) return;
     attendanceStatus.textContent = message;
     attendanceStatus.className = `status-box status-${type}`;
     attendanceStatus.style.display = 'block';
@@ -345,63 +349,28 @@ function showAttendanceStatus(message, type) {
         attendanceStatus.style.display = 'none';
     }, 5000);
 }
-
-function showAddEmployeeStatus(message, type) {
-    addEmployeeStatus.innerHTML = `<div class="status-box status-${type}">${message}</div>`;
-    setTimeout(() => {
-        addEmployeeStatus.innerHTML = '';
-    }, 5000);
-}
-
 function showLoading(show) {
+    if (!loadingIndicator) return;
     loadingIndicator.style.display = show ? 'block' : 'none';
 }
 
-function drawDetections(faces) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let feedback = '';
-    if (!faces || faces.length === 0) {
-        feedback = 'No face detected';
-        detectionFeedback.style.color = '#888';
-    } else {
-        faces.forEach(face => {
-            let color = '#FFD600'; // yellow for unknown
-            if (face.is_real === true) color = '#28a745'; // green
-            else if (face.is_real === false) color = '#dc3545'; // red
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = color;
-            ctx.beginPath();
-            ctx.rect(face.x, face.y, face.w, face.h);
-            ctx.stroke();
-            // Draw label
-            ctx.font = '16px Arial';
-            ctx.fillStyle = color;
-            let label = face.is_real === true ? 'Real Face' : (face.is_real === false ? 'Spoofing' : 'Unknown');
-            ctx.fillText(label, face.x, face.y - 8);
-            feedback = label;
-        });
-    }
-    detectionFeedback.textContent = feedback;
-}
-
 function drawDetectionOverlay() {
-    // Always clear and redraw overlays using the latest detection result
+    if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let feedback = '';
     if (!latestDetectionFaces || latestDetectionFaces.length === 0) {
         feedback = 'No face detected';
-        detectionFeedback.style.color = '#888';
+        if (detectionFeedback) detectionFeedback.style.color = '#888';
     } else {
         latestDetectionFaces.forEach(face => {
-            let color = '#FFD600'; // yellow for unknown
-            if (face.is_real === true) color = '#28a745'; // green
-            else if (face.is_real === false) color = '#dc3545'; // red
+            let color = '#FFD600';
+            if (face.is_real === true) color = '#28a745';
+            else if (face.is_real === false) color = '#dc3545';
             ctx.lineWidth = 3;
             ctx.strokeStyle = color;
             ctx.beginPath();
             ctx.rect(face.x, face.y, face.w, face.h);
             ctx.stroke();
-            // Draw label
             ctx.font = '16px Arial';
             ctx.fillStyle = color;
             let label = face.is_real === true ? 'Real Face' : (face.is_real === false ? 'Spoofing' : 'Unknown');
@@ -409,16 +378,16 @@ function drawDetectionOverlay() {
             feedback = label;
         });
     }
-    detectionFeedback.textContent = feedback;
-    requestAnimationFrame(drawDetectionOverlay); // keep drawing overlays smoothly
+    if (detectionFeedback) detectionFeedback.textContent = feedback;
+    requestAnimationFrame(drawDetectionOverlay);
 }
 
 async function liveDetect() {
+    if (!video || !canvas || !ctx) return;
     if (video.videoWidth === 0 || video.videoHeight === 0) return;
     if (isProcessing) return;
-    if (detectionInFlight) return; // Debounce: only one detection at a time
+    if (detectionInFlight) return;
     detectionInFlight = true;
-    // Get frame
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
@@ -455,25 +424,17 @@ async function liveDetect() {
     }
 }
 
-// Real-time attendance mode
+// --- Real-time attendance mode ---
 function toggleRealtimeMode() {
     if (!realtimeMode) {
-        // Start real-time mode
         realtimeMode = true;
-        toggleRealtimeBtn.textContent = 'Stop Real-Time Attendance';
-        realtimeStatus.style.display = 'inline';
-        recognizeFaceBtn.disabled = true;
-        captureForEmployeeBtn.disabled = true;
-        addEmployeeBtn.disabled = true;
+        if (toggleRealtimeBtn) toggleRealtimeBtn.textContent = 'Stop Real-Time Attendance';
+        if (recognizeFaceBtn) recognizeFaceBtn.disabled = true;
         realtimeInterval = setInterval(realtimeRecognize, 2000);
     } else {
-        // Stop real-time mode
         realtimeMode = false;
-        toggleRealtimeBtn.textContent = 'Start Real-Time Attendance';
-        realtimeStatus.style.display = 'none';
-        recognizeFaceBtn.disabled = false;
-        captureForEmployeeBtn.disabled = false;
-        addEmployeeBtn.disabled = !capturedImage;
+        if (toggleRealtimeBtn) toggleRealtimeBtn.textContent = 'Start Real-Time Attendance';
+        if (recognizeFaceBtn) recognizeFaceBtn.disabled = false;
         clearInterval(realtimeInterval);
     }
 }
@@ -501,14 +462,11 @@ async function realtimeRecognize() {
             if (!lastRecognized[emp] || (now - lastRecognized[emp]) > COOLDOWN_SECONDS * 1000) {
                 lastRecognized[emp] = now;
                 showStatus(`✅ Recognized: ${emp} (Real face verified)`, 'success');
-                lastRecognitionText.textContent = `${emp} - ${new Date().toLocaleTimeString()} (Anti-spoofing: PASSED)`;
-                lastRecognition.style.display = 'block';
+                if (lastRecognitionText) lastRecognitionText.textContent = `${emp} - ${new Date().toLocaleTimeString()} (Anti-spoofing: PASSED)`;
+                if (lastRecognition) lastRecognition.style.display = 'block';
                 await markAttendance(emp);
-            } else {
-                // Cooldown active, skip
             }
         } else {
-            // Face not recognized but antispoofing passed
             showStatus(`❓ ${result.message} (Real face detected)`, 'error');
         }
     } catch (error) {
@@ -519,14 +477,14 @@ async function realtimeRecognize() {
     }
 }
 
-// Initialize page
+// --- Initialize page ---
 document.addEventListener('DOMContentLoaded', () => {
-    loadEmployees();
     loadAttendance();
-    // Refresh attendance every 30 seconds
     setInterval(loadAttendance, 30000);
-    // If past tab is active on load, load past attendance
     if (attendancePastTab && attendancePastTab.classList.contains('active')) {
         loadPastAttendance();
+    }
+    if (attendanceAllPastTab && attendanceAllPastTab.classList.contains('active')) {
+        loadAllPastAttendance();
     }
 });

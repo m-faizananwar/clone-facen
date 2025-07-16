@@ -298,6 +298,11 @@ def index():
     """Main page"""
     return render_template('index.html')
 
+@app.route('/employees')
+def employees_page():
+    """Employee management page"""
+    return render_template('employees.html')
+
 @app.route('/add_employee', methods=['POST'])
 def add_employee():
     """Add a new employee"""
@@ -312,6 +317,45 @@ def add_employee():
         success, message = attendance_system.add_employee(name, image_data)
         return jsonify({"success": success, "message": message})
     
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
+@app.route('/add_employee_file', methods=['POST'])
+def add_employee_file():
+    """Add employee via file upload (multipart/form-data)"""
+    try:
+        name = request.form.get('name')
+        file = request.files.get('file')
+        if not name or not file:
+            return jsonify({"success": False, "message": "Name and file are required"})
+        # Read file and convert to base64
+        image_bytes = file.read()
+        image_data = 'data:image/jpeg;base64,' + base64.b64encode(image_bytes).decode('utf-8')
+        success, message = attendance_system.add_employee(name, image_data)
+        return jsonify({"success": success, "message": message})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
+@app.route('/remove_employee', methods=['POST'])
+def remove_employee():
+    """Remove an employee by name"""
+    try:
+        data = request.json
+        name = data.get('name')
+        if not name:
+            return jsonify({"success": False, "message": "Employee name required"})
+        # Remove from employees dict
+        if name in attendance_system.employees:
+            # Remove image directory
+            emp_dir = os.path.join(DB_PATH, name.replace(" ", "_"))
+            if os.path.exists(emp_dir):
+                import shutil
+                shutil.rmtree(emp_dir)
+            del attendance_system.employees[name]
+            attendance_system.save_employees()
+            return jsonify({"success": True, "message": f"Removed employee {name}"})
+        else:
+            return jsonify({"success": False, "message": "Employee not found"})
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"})
 

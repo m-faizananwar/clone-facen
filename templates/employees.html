@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management</title>
+    <link rel="stylesheet" href="/static/index.css">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+    <style>
+        .employee-mgmt-container { max-width: 600px; margin: 40px auto; background: #23272f; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.18); padding: 32px 28px; }
+        .employee-mgmt-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .employee-mgmt-title { font-size: 1.5rem; font-weight: 600; color: #fff; }
+        .nav-link { color: #4f8cff; text-decoration: none; font-weight: 500; }
+        .nav-link:hover { text-decoration: underline; }
+        .form-section { margin-bottom: 32px; }
+        .file-upload-label { display: block; margin-bottom: 8px; color: #b0b8c1; font-weight: 500; }
+        .employee-list { margin-top: 18px; max-height: 200px; overflow-y: auto; border: 1px solid #2a2d36; border-radius: 6px; padding: 10px; background: #181a20; }
+        .employee-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #23272f; color: #f1f3f4; }
+        .employee-item:last-child { border-bottom: none; }
+        .remove-btn { background: #ef4444; color: #fff; border: none; border-radius: 5px; padding: 4px 12px; cursor: pointer; font-size: 0.95rem; }
+        .remove-btn:hover { background: #b91c1c; }
+    </style>
+</head>
+<body class="dark-mode">
+    <nav class="topnav">
+        <div class="brand">Face Attendance</div>
+        <div class="nav-tabs">
+            <a href="/" class="tab-btn nav-link">Attendance Monitoring</a>
+            <a href="/employees" class="tab-btn nav-link active">Employee Management</a>
+        </div>
+    </nav>
+    <div class="employee-mgmt-container">
+        <div class="employee-mgmt-header">
+            <span class="employee-mgmt-title">Employee Management</span>
+        </div>
+        <div class="form-section">
+            <h4>Add New Employee (Camera)</h4>
+            <div class="form-group">
+                <label for="employeeNameCam">Employee Name:</label>
+                <input type="text" id="employeeNameCam" placeholder="Enter employee name">
+            </div>
+            <div class="camera-container" style="max-width:320px;margin-bottom:10px;">
+                <video id="videoCam" autoplay playsinline style="width:100%;height:200px;background:#000;border-radius:10px;"></video>
+                <canvas id="canvasCam" style="display:none;"></canvas>
+            </div>
+            <button id="startCameraCam" class="btn primary">Start Camera</button>
+            <button id="captureEmployeeCam" class="btn success" disabled>Capture & Add Employee</button>
+            <div id="addEmployeeStatusCam" style="margin-top:10px;"></div>
+        </div>
+        <div class="form-section">
+            <h4>Add New Employee (Upload Image)</h4>
+            <div class="form-group">
+                <label for="employeeNameFile">Employee Name:</label>
+                <input type="text" id="employeeNameFile" placeholder="Enter employee name">
+            </div>
+            <div class="form-group">
+                <label class="file-upload-label" for="employeeFile">Select Image File:</label>
+                <input type="file" id="employeeFile" accept="image/*">
+            </div>
+            <button id="addEmployeeFileBtn" class="btn primary">Add Employee (Upload)</button>
+            <div id="addEmployeeStatusFile" style="margin-top:10px;"></div>
+        </div>
+        <div class="form-section">
+            <h4>Registered Employees</h4>
+            <div id="employeeListMgmt" class="employee-list">Loading employees...</div>
+        </div>
+    </div>
+    <script>
+    // Camera-based add
+    let videoCam = document.getElementById('videoCam');
+    let canvasCam = document.getElementById('canvasCam');
+    let startCameraCam = document.getElementById('startCameraCam');
+    let captureEmployeeCam = document.getElementById('captureEmployeeCam');
+    let addEmployeeStatusCam = document.getElementById('addEmployeeStatusCam');
+    let streamCam = null;
+    startCameraCam.addEventListener('click', async () => {
+        try {
+            streamCam = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 200 } });
+            videoCam.srcObject = streamCam;
+            startCameraCam.disabled = true;
+            captureEmployeeCam.disabled = false;
+        } catch (err) {
+            addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">Error accessing camera: ' + err.message + '</span>';
+        }
+    });
+    captureEmployeeCam.addEventListener('click', async () => {
+        let name = document.getElementById('employeeNameCam').value.trim();
+        if (!name) {
+            addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">Please enter employee name</span>';
+            return;
+        }
+        canvasCam.width = videoCam.videoWidth;
+        canvasCam.height = videoCam.videoHeight;
+        let ctx = canvasCam.getContext('2d');
+        ctx.drawImage(videoCam, 0, 0);
+        let imageData = canvasCam.toDataURL('image/jpeg', 0.8);
+        addEmployeeStatusCam.innerHTML = 'Processing...';
+        try {
+            let resp = await fetch('/add_employee', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, image: imageData })
+            });
+            let result = await resp.json();
+            if (result.success) {
+                addEmployeeStatusCam.innerHTML = '<span style="color:#22c55e">' + result.message + '</span>';
+                document.getElementById('employeeNameCam').value = '';
+                loadEmployeesMgmt();
+            } else {
+                addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">' + result.message + '</span>';
+            }
+        } catch (e) {
+            addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">Error: ' + e.message + '</span>';
+        }
+    });
+    // File upload add
+    document.getElementById('addEmployeeFileBtn').addEventListener('click', async () => {
+        let name = document.getElementById('employeeNameFile').value.trim();
+        let fileInput = document.getElementById('employeeFile');
+        let statusDiv = document.getElementById('addEmployeeStatusFile');
+        if (!name) {
+            statusDiv.innerHTML = '<span style="color:#ef4444">Please enter employee name</span>';
+            return;
+        }
+        if (!fileInput.files[0]) {
+            statusDiv.innerHTML = '<span style="color:#ef4444">Please select an image file</span>';
+            return;
+        }
+        let formData = new FormData();
+        formData.append('name', name);
+        formData.append('file', fileInput.files[0]);
+        statusDiv.innerHTML = 'Processing...';
+        try {
+            let resp = await fetch('/add_employee_file', {
+                method: 'POST',
+                body: formData
+            });
+            let result = await resp.json();
+            if (result.success) {
+                statusDiv.innerHTML = '<span style="color:#22c55e">' + result.message + '</span>';
+                document.getElementById('employeeNameFile').value = '';
+                fileInput.value = '';
+                loadEmployeesMgmt();
+            } else {
+                statusDiv.innerHTML = '<span style="color:#ef4444">' + result.message + '</span>';
+            }
+        } catch (e) {
+            statusDiv.innerHTML = '<span style="color:#ef4444">Error: ' + e.message + '</span>';
+        }
+    });
+    // Remove employee
+    async function removeEmployee(name) {
+        if (!confirm('Remove employee ' + name + '?')) return;
+        try {
+            let resp = await fetch('/remove_employee', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            });
+            let result = await resp.json();
+            if (result.success) {
+                loadEmployeesMgmt();
+            } else {
+                alert(result.message);
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        }
+    }
+    // Load employees
+    async function loadEmployeesMgmt() {
+        let list = document.getElementById('employeeListMgmt');
+        list.innerHTML = 'Loading...';
+        try {
+            let resp = await fetch('/get_employees');
+            let employees = await resp.json();
+            list.innerHTML = '';
+            if (Object.keys(employees).length === 0) {
+                list.innerHTML = '<div class="employee-item">No employees registered</div>';
+            } else {
+                for (const [name, info] of Object.entries(employees)) {
+                    let item = document.createElement('div');
+                    item.className = 'employee-item';
+                    item.innerHTML = `<span>${name} (ID: ${info.id})</span> <button class="remove-btn" onclick="removeEmployee('${name.replace(/'/g, "\\'")}')">Remove</button>`;
+                    list.appendChild(item);
+                }
+            }
+        } catch (e) {
+            list.innerHTML = '<div class="employee-item">Error loading employees</div>';
+        }
+    }
+    window.removeEmployee = removeEmployee;
+    document.addEventListener('DOMContentLoaded', loadEmployeesMgmt);
+    </script>
+</body>
+</html> 

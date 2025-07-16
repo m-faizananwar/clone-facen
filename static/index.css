@@ -290,6 +290,88 @@ input[type="text"]:focus, input[type="date"]:focus {
     text-align: center;
     margin-top: 10px;
 }
+.attendance-table {
+    width: 100%;
+    background: #20232a;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    overflow: hidden;
+    margin-bottom: 10px;
+    border: 1px solid #23272f;
+}
+.attendance-table-header {
+    display: flex;
+    font-weight: 700;
+    background: #23272f;
+    color: #4f8cff;
+    padding: 10px 0 10px 0;
+    border-bottom: 1px solid #2a2d36;
+    font-size: 1.08em;
+    letter-spacing: 0.02em;
+    text-align: left;
+    gap: 0;
+}
+.attendance-table-header > div {
+    flex: 1;
+    padding-left: 18px;
+}
+.attendance-table-header > div:first-child {
+    flex: 2;
+}
+.attendance-table-body {
+    width: 100%;
+    min-height: 40px;
+    background: none;
+}
+.attendance-table-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 0 12px 0;
+    font-size: 1.04em;
+    border-bottom: 1px solid #23272f;
+    transition: background 0.15s;
+    background: #20232a;
+}
+.attendance-table-row.alt {
+    background: #23272f;
+}
+.attendance-table-row:hover {
+    background: #232e3a;
+}
+.attendance-table-row > div {
+    flex: 1;
+    padding-left: 18px;
+    word-break: break-word;
+}
+.attendance-table-row > div:first-child {
+    flex: 2;
+}
+.attendance-table-row.empty {
+    color: #888;
+    text-align: center;
+    font-style: italic;
+    background: none;
+    border-bottom: none;
+}
+.badge {
+    display: inline-block;
+    min-width: 48px;
+    text-align: center;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.98em;
+    margin-right: 2px;
+    letter-spacing: 0.01em;
+}
+.badge-in {
+    background: #22c55e;
+    color: #fff;
+}
+.badge-out {
+    background: #4f8cff;
+    color: #fff;
+}
 @media (max-width: 1100px) {
     .main-layout {
         flex-direction: column;
@@ -298,5 +380,14 @@ input[type="text"]:focus, input[type="date"]:focus {
     .attendance-panel {
         margin-left: 0;
         min-width: unset;
+    }
+}
+@media (max-width: 700px) {
+    .attendance-table-header > div, .attendance-table-row > div {
+        padding-left: 6px;
+        font-size: 0.98em;
+    }
+    .attendance-table {
+        border-radius: 7px;
     }
 }
