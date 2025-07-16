@@ -7,94 +7,410 @@
     <link rel="stylesheet" href="/static/index.css">
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
     <style>
-        .employee-mgmt-container { max-width: 600px; margin: 40px auto; background: #23272f; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.18); padding: 32px 28px; }
-        .employee-mgmt-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-        .employee-mgmt-title { font-size: 1.5rem; font-weight: 600; color: #fff; }
-        .nav-link { color: #4f8cff; text-decoration: none; font-weight: 500; }
-        .nav-link:hover { text-decoration: underline; }
-        .form-section { margin-bottom: 32px; }
-        .file-upload-label { display: block; margin-bottom: 8px; color: #b0b8c1; font-weight: 500; }
-        .employee-list { margin-top: 18px; max-height: 200px; overflow-y: auto; border: 1px solid #2a2d36; border-radius: 6px; padding: 10px; background: #181a20; }
-        .employee-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #23272f; color: #f1f3f4; }
-        .employee-item:last-child { border-bottom: none; }
-        .remove-btn { background: #ef4444; color: #fff; border: none; border-radius: 5px; padding: 4px 12px; cursor: pointer; font-size: 0.95rem; }
-        .remove-btn:hover { background: #b91c1c; }
+        /* Google Meet-inspired styles for Employee Management */
+        body {
+            background: #181a20;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+        .meet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #23272f;
+            padding: 0 32px;
+            height: 64px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .meet-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .meet-nav {
+            display: flex;
+            gap: 16px;
+        }
+        .meet-nav a {
+            color: #b0b8c1;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+            padding: 8px 20px;
+            border-radius: 6px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .meet-nav a.active, .meet-nav a:hover {
+            background: #181a20;
+            color: #4f8cff;
+            font-weight: 600;
+        }
+        .meet-main-card {
+            max-width: 900px;
+            margin: 48px auto 0 auto;
+            background: #23272f;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+            padding: 40px 36px 60px 36px;
+            position: relative;
+        }
+        .meet-section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 24px;
+        }
+        .meet-employee-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 28px;
+            margin-top: 24px;
+        }
+        .meet-employee-card {
+            background: #181a20;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 12px 18px 12px;
+            position: relative;
+            transition: box-shadow 0.18s, background 0.18s;
+        }
+        .meet-employee-card:hover {
+            box-shadow: 0 4px 24px rgba(79,140,255,0.12);
+        }
+        .meet-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #232e3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            color: #4f8cff;
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+        .meet-employee-name {
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #f1f3f4;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+        .meet-employee-id {
+            font-size: 0.98rem;
+            color: #b0b8c1;
+            margin-bottom: 10px;
+        }
+        .meet-remove-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.18s, opacity 0.18s;
+        }
+        .meet-remove-btn:hover {
+            background: #b91c1c;
+            opacity: 1;
+        }
+        /* Floating Action Button */
+        .meet-fab {
+            position: fixed;
+            bottom: 36px;
+            right: 36px;
+            background: #4f8cff;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            box-shadow: 0 4px 16px rgba(79,140,255,0.18);
+            font-size: 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: background 0.18s;
+        }
+        .meet-fab:hover {
+            background: #2563eb;
+        }
+        /* Modal for Add Employee */
+        .meet-modal-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(24,26,32,0.85);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.18s;
+        }
+        .meet-modal {
+            background: #23272f;
+            border-radius: 16px;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.22);
+            padding: 36px 32px 28px 32px;
+            min-width: 320px;
+            max-width: 95vw;
+            width: 400px;
+            position: relative;
+            transition: transform 0.18s, opacity 0.18s;
+        }
+        .meet-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #b0b8c1;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .meet-modal-title {
+            font-size: 1.18rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 18px;
+        }
+        .meet-modal-form-group {
+            margin-bottom: 18px;
+        }
+        .meet-modal label {
+            color: #b0b8c1;
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .meet-modal input[type="text"], .meet-modal input[type="file"] {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #2a2d36;
+            border-radius: 6px;
+            background: #181a20;
+            color: #f1f3f4;
+            font-size: 1rem;
+        }
+        .meet-modal input[type="text"]:focus {
+            outline: 2px solid #4f8cff;
+        }
+        .meet-modal-btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .meet-modal-btn {
+            flex: 1;
+            padding: 10px 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.18s;
+        }
+        .meet-modal-btn.primary {
+            background: #4f8cff;
+            color: #fff;
+        }
+        .meet-modal-btn.primary:hover {
+            background: #2563eb;
+        }
+        .meet-modal-btn.secondary {
+            background: #232e3a;
+            color: #b0b8c1;
+        }
+        .meet-modal-btn.secondary:hover {
+            background: #181a20;
+        }
+        .meet-modal-status {
+            margin-top: 10px;
+            min-height: 22px;
+            font-size: 1rem;
+        }
+        .meet-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+        .meet-avatar-initial {
+            font-size: 2.2rem;
+            color: #4f8cff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .meet-modal input:disabled, .meet-modal-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        @media (max-width: 700px) {
+            .meet-main-card {
+                padding: 18px 4vw 60px 4vw;
+            }
+            .meet-modal {
+                padding: 18px 4vw 18px 4vw;
+                min-width: unset;
+                width: 98vw;
+            }
+            .meet-fab {
+                z-index: 10;
+            }
+            .meet-modal-bg {
+                z-index: 200;
+            }
+        }
     </style>
 </head>
 <body class="dark-mode">
-    <nav class="topnav">
-        <div class="brand">Face Attendance</div>
-        <div class="nav-tabs">
+    <nav class="meet-header">
+        <div class="meet-title">Face Attendance</div>
+        <div class="meet-nav">
             <a href="/" class="tab-btn nav-link">Attendance Monitoring</a>
             <a href="/employees" class="tab-btn nav-link active">Employee Management</a>
         </div>
     </nav>
-    <div class="employee-mgmt-container">
-        <div class="employee-mgmt-header">
-            <span class="employee-mgmt-title">Employee Management</span>
-        </div>
-        <div class="form-section">
-            <h4>Add New Employee (Camera)</h4>
-            <div class="form-group">
-                <label for="employeeNameCam">Employee Name:</label>
-                <input type="text" id="employeeNameCam" placeholder="Enter employee name">
+    <div class="meet-main-card">
+        <div class="meet-section-title">Employees</div>
+        <div id="employeeGrid" class="meet-employee-grid">Loading employees...</div>
+    </div>
+    <button class="meet-fab" id="openAddEmployeeModal" title="Add Employee">+</button>
+    <!-- Modal for Add Employee -->
+    <div id="addEmployeeModalBg" class="meet-modal-bg" style="display:none;">
+        <div class="meet-modal" tabindex="-1">
+            <button class="meet-modal-close" id="closeAddEmployeeModal" aria-label="Close">&times;</button>
+            <div class="meet-modal-title">Add New Employee</div>
+            <div class="meet-modal-form-group">
+                <label for="employeeNameModal">Employee Name:</label>
+                <input type="text" id="employeeNameModal" placeholder="Enter employee name" autocomplete="off">
             </div>
-            <div class="camera-container" style="max-width:320px;margin-bottom:10px;">
-                <video id="videoCam" autoplay playsinline style="width:100%;height:200px;background:#000;border-radius:10px;"></video>
-                <canvas id="canvasCam" style="display:none;"></canvas>
+            <div class="meet-modal-form-group">
+                <label>Choose Method:</label>
+                <div class="meet-modal-btn-row">
+                    <button class="meet-modal-btn primary" id="addByCameraBtn" type="button">Camera</button>
+                    <button class="meet-modal-btn secondary" id="addByUploadBtn" type="button">Upload Image</button>
+                </div>
             </div>
-            <button id="startCameraCam" class="btn primary">Start Camera</button>
-            <button id="captureEmployeeCam" class="btn success" disabled>Capture & Add Employee</button>
-            <div id="addEmployeeStatusCam" style="margin-top:10px;"></div>
-        </div>
-        <div class="form-section">
-            <h4>Add New Employee (Upload Image)</h4>
-            <div class="form-group">
-                <label for="employeeNameFile">Employee Name:</label>
-                <input type="text" id="employeeNameFile" placeholder="Enter employee name">
+            <div id="addEmployeeCameraSection" style="display:none;">
+                <div class="meet-modal-form-group">
+                    <video id="videoCamModal" autoplay playsinline style="width:100%;height:180px;background:#000;border-radius:10px;"></video>
+                    <canvas id="canvasCamModal" style="display:none;"></canvas>
+                </div>
+                <button class="meet-modal-btn primary" id="startCameraModal" type="button">Start Camera</button>
+                <button class="meet-modal-btn success" id="captureEmployeeModal" type="button" disabled>Capture & Add</button>
             </div>
-            <div class="form-group">
-                <label class="file-upload-label" for="employeeFile">Select Image File:</label>
-                <input type="file" id="employeeFile" accept="image/*">
+            <div id="addEmployeeUploadSection" style="display:none;">
+                <div class="meet-modal-form-group">
+                    <label for="employeeFileModal">Select Image File:</label>
+                    <input type="file" id="employeeFileModal" accept="image/*">
+                </div>
+                <button class="meet-modal-btn primary" id="addEmployeeFileModalBtn" type="button">Add Employee (Upload)</button>
             </div>
-            <button id="addEmployeeFileBtn" class="btn primary">Add Employee (Upload)</button>
-            <div id="addEmployeeStatusFile" style="margin-top:10px;"></div>
-        </div>
-        <div class="form-section">
-            <h4>Registered Employees</h4>
-            <div id="employeeListMgmt" class="employee-list">Loading employees...</div>
+            <div id="addEmployeeStatusModal" class="meet-modal-status"></div>
         </div>
     </div>
     <script>
+    // --- Modal logic ---
+    const openAddEmployeeModal = document.getElementById('openAddEmployeeModal');
+    const closeAddEmployeeModal = document.getElementById('closeAddEmployeeModal');
+    const addEmployeeModalBg = document.getElementById('addEmployeeModalBg');
+    const addByCameraBtn = document.getElementById('addByCameraBtn');
+    const addByUploadBtn = document.getElementById('addByUploadBtn');
+    const addEmployeeCameraSection = document.getElementById('addEmployeeCameraSection');
+    const addEmployeeUploadSection = document.getElementById('addEmployeeUploadSection');
+    const employeeNameModal = document.getElementById('employeeNameModal');
+    const addEmployeeStatusModal = document.getElementById('addEmployeeStatusModal');
+    let videoCamModal = document.getElementById('videoCamModal');
+    let canvasCamModal = document.getElementById('canvasCamModal');
+    let startCameraModal = document.getElementById('startCameraModal');
+    let captureEmployeeModal = document.getElementById('captureEmployeeModal');
+    let streamCamModal = null;
+    let employeeFileModal = document.getElementById('employeeFileModal');
+    let addEmployeeFileModalBtn = document.getElementById('addEmployeeFileModalBtn');
+    // Modal open/close helpers
+    function resetModal() {
+        employeeNameModal.value = '';
+        addEmployeeStatusModal.innerHTML = '';
+        addEmployeeCameraSection.style.display = 'none';
+        addEmployeeUploadSection.style.display = 'none';
+        startCameraModal.disabled = false;
+        captureEmployeeModal.disabled = true;
+        employeeFileModal.value = '';
+        if (streamCamModal) {
+            streamCamModal.getTracks().forEach(track => track.stop());
+            streamCamModal = null;
+        }
+    }
+    function closeModal() {
+        addEmployeeModalBg.style.display = 'none';
+        resetModal();
+    }
+    openAddEmployeeModal.addEventListener('click', () => {
+        addEmployeeModalBg.style.display = 'flex';
+        resetModal();
+        setTimeout(() => {
+            document.querySelector('.meet-modal').focus();
+        }, 100);
+    });
+    closeAddEmployeeModal.addEventListener('click', closeModal);
+    addEmployeeModalBg.addEventListener('click', (e) => {
+        if (e.target === addEmployeeModalBg) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (addEmployeeModalBg.style.display === 'flex' && (e.key === 'Escape' || e.key === 'Esc')) closeModal();
+    });
+    addByCameraBtn.addEventListener('click', () => {
+        addEmployeeCameraSection.style.display = 'block';
+        addEmployeeUploadSection.style.display = 'none';
+        addEmployeeStatusModal.innerHTML = '';
+    });
+    addByUploadBtn.addEventListener('click', () => {
+        addEmployeeCameraSection.style.display = 'none';
+        addEmployeeUploadSection.style.display = 'block';
+        addEmployeeStatusModal.innerHTML = '';
+    });
     // Camera-based add
-    let videoCam = document.getElementById('videoCam');
-    let canvasCam = document.getElementById('canvasCam');
-    let startCameraCam = document.getElementById('startCameraCam');
-    let captureEmployeeCam = document.getElementById('captureEmployeeCam');
-    let addEmployeeStatusCam = document.getElementById('addEmployeeStatusCam');
-    let streamCam = null;
-    startCameraCam.addEventListener('click', async () => {
+    startCameraModal.addEventListener('click', async () => {
         try {
-            streamCam = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 200 } });
-            videoCam.srcObject = streamCam;
-            startCameraCam.disabled = true;
-            captureEmployeeCam.disabled = false;
+            streamCamModal = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 180 } });
+            videoCamModal.srcObject = streamCamModal;
+            startCameraModal.disabled = true;
+            captureEmployeeModal.disabled = false;
         } catch (err) {
-            addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">Error accessing camera: ' + err.message + '</span>';
+            addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">Error accessing camera: ' + err.message + '</span>';
         }
     });
-    captureEmployeeCam.addEventListener('click', async () => {
-        let name = document.getElementById('employeeNameCam').value.trim();
+    captureEmployeeModal.addEventListener('click', async () => {
+        let name = employeeNameModal.value.trim();
         if (!name) {
-            addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">Please enter employee name</span>';
+            addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">Please enter employee name</span>';
             return;
         }
-        canvasCam.width = videoCam.videoWidth;
-        canvasCam.height = videoCam.videoHeight;
-        let ctx = canvasCam.getContext('2d');
-        ctx.drawImage(videoCam, 0, 0);
-        let imageData = canvasCam.toDataURL('image/jpeg', 0.8);
-        addEmployeeStatusCam.innerHTML = 'Processing...';
+        canvasCamModal.width = videoCamModal.videoWidth;
+        canvasCamModal.height = videoCamModal.videoHeight;
+        let ctx = canvasCamModal.getContext('2d');
+        ctx.drawImage(videoCamModal, 0, 0);
+        let imageData = canvasCamModal.toDataURL('image/jpeg', 0.8);
+        addEmployeeStatusModal.innerHTML = 'Processing...';
+        captureEmployeeModal.disabled = true;
         try {
             let resp = await fetch('/add_employee', {
                 method: 'POST',
@@ -103,33 +419,39 @@
             });
             let result = await resp.json();
             if (result.success) {
-                addEmployeeStatusCam.innerHTML = '<span style="color:#22c55e">' + result.message + '</span>';
-                document.getElementById('employeeNameCam').value = '';
-                loadEmployeesMgmt();
+                addEmployeeStatusModal.innerHTML = '<span style="color:#22c55e">' + result.message + '</span>';
+                employeeNameModal.value = '';
+                if (streamCamModal) {
+                    streamCamModal.getTracks().forEach(track => track.stop());
+                    streamCamModal = null;
+                }
+                setTimeout(() => { closeModal(); loadEmployeesGrid(); }, 1200);
             } else {
-                addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">' + result.message + '</span>';
+                addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">' + result.message + '</span>';
+                captureEmployeeModal.disabled = false;
             }
         } catch (e) {
-            addEmployeeStatusCam.innerHTML = '<span style="color:#ef4444">Error: ' + e.message + '</span>';
+            addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">Error: ' + e.message + '</span>';
+            captureEmployeeModal.disabled = false;
         }
     });
     // File upload add
-    document.getElementById('addEmployeeFileBtn').addEventListener('click', async () => {
-        let name = document.getElementById('employeeNameFile').value.trim();
-        let fileInput = document.getElementById('employeeFile');
-        let statusDiv = document.getElementById('addEmployeeStatusFile');
+    addEmployeeFileModalBtn.addEventListener('click', async () => {
+        let name = employeeNameModal.value.trim();
+        let fileInput = employeeFileModal;
         if (!name) {
-            statusDiv.innerHTML = '<span style="color:#ef4444">Please enter employee name</span>';
+            addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">Please enter employee name</span>';
             return;
         }
         if (!fileInput.files[0]) {
-            statusDiv.innerHTML = '<span style="color:#ef4444">Please select an image file</span>';
+            addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">Please select an image file</span>';
             return;
         }
         let formData = new FormData();
         formData.append('name', name);
         formData.append('file', fileInput.files[0]);
-        statusDiv.innerHTML = 'Processing...';
+        addEmployeeStatusModal.innerHTML = 'Processing...';
+        addEmployeeFileModalBtn.disabled = true;
         try {
             let resp = await fetch('/add_employee_file', {
                 method: 'POST',
@@ -137,15 +459,17 @@
             });
             let result = await resp.json();
             if (result.success) {
-                statusDiv.innerHTML = '<span style="color:#22c55e">' + result.message + '</span>';
-                document.getElementById('employeeNameFile').value = '';
+                addEmployeeStatusModal.innerHTML = '<span style="color:#22c55e">' + result.message + '</span>';
+                employeeNameModal.value = '';
                 fileInput.value = '';
-                loadEmployeesMgmt();
+                setTimeout(() => { closeModal(); loadEmployeesGrid(); }, 1200);
             } else {
-                statusDiv.innerHTML = '<span style="color:#ef4444">' + result.message + '</span>';
+                addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">' + result.message + '</span>';
+                addEmployeeFileModalBtn.disabled = false;
             }
         } catch (e) {
-            statusDiv.innerHTML = '<span style="color:#ef4444">Error: ' + e.message + '</span>';
+            addEmployeeStatusModal.innerHTML = '<span style="color:#ef4444">Error: ' + e.message + '</span>';
+            addEmployeeFileModalBtn.disabled = false;
         }
     });
     // Remove employee
@@ -159,7 +483,7 @@
             });
             let result = await resp.json();
             if (result.success) {
-                loadEmployeesMgmt();
+                loadEmployeesGrid();
             } else {
                 alert(result.message);
             }
@@ -168,29 +492,57 @@
         }
     }
     // Load employees
-    async function loadEmployeesMgmt() {
-        let list = document.getElementById('employeeListMgmt');
-        list.innerHTML = 'Loading...';
+    async function loadEmployeesGrid() {
+        let grid = document.getElementById('employeeGrid');
+        grid.innerHTML = 'Loading...';
         try {
             let resp = await fetch('/get_employees');
             let employees = await resp.json();
-            list.innerHTML = '';
+            grid.innerHTML = '';
             if (Object.keys(employees).length === 0) {
-                list.innerHTML = '<div class="employee-item">No employees registered</div>';
+                grid.innerHTML = '<div style="color:#b0b8c1;text-align:center;width:100%;">No employees registered</div>';
             } else {
                 for (const [name, info] of Object.entries(employees)) {
-                    let item = document.createElement('div');
-                    item.className = 'employee-item';
-                    item.innerHTML = `<span>${name} (ID: ${info.id})</span> <button class="remove-btn" onclick="removeEmployee('${name.replace(/'/g, "\\'")}')">Remove</button>`;
-                    list.appendChild(item);
+                    let card = document.createElement('div');
+                    card.className = 'meet-employee-card';
+                    let avatar = document.createElement('div');
+                    avatar.className = 'meet-avatar';
+                    if (info.image_path) {
+                        let img = document.createElement('img');
+                        img.src = '/' + info.image_path.replace(/\\/g, '/');
+                        img.alt = name;
+                        img.onload = function() { this.style.opacity = 1; };
+                        img.onerror = function() {
+                            avatar.innerHTML = `<svg class='meet-avatar-icon' width='48' height='48' viewBox='0 0 48 48' fill='none' xmlns='http://www.w3.org/2000/svg'><circle cx='24' cy='24' r='24' fill='#232e3a'/><path d='M24 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm0 3c-4.418 0-13 2.21-13 6.625V39h26v-4.375C37 30.21 28.418 28 24 28z' fill='#4f8cff'/></svg>`;
+                        };
+                        avatar.appendChild(img);
+                    } else {
+                        avatar.innerHTML = `<svg class='meet-avatar-icon' width='48' height='48' viewBox='0 0 48 48' fill='none' xmlns='http://www.w3.org/2000/svg'><circle cx='24' cy='24' r='24' fill='#232e3a'/><path d='M24 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm0 3c-4.418 0-13 2.21-13 6.625V39h26v-4.375C37 30.21 28.418 28 24 28z' fill='#4f8cff'/></svg>`;
+                    }
+                    let empName = document.createElement('div');
+                    empName.className = 'meet-employee-name';
+                    empName.textContent = name;
+                    let empId = document.createElement('div');
+                    empId.className = 'meet-employee-id';
+                    empId.textContent = 'ID: ' + info.id;
+                    let removeBtn = document.createElement('button');
+                    removeBtn.className = 'meet-remove-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.title = 'Remove';
+                    removeBtn.onclick = () => removeEmployee(name);
+                    card.appendChild(removeBtn);
+                    card.appendChild(avatar);
+                    card.appendChild(empName);
+                    card.appendChild(empId);
+                    grid.appendChild(card);
                 }
             }
         } catch (e) {
-            list.innerHTML = '<div class="employee-item">Error loading employees</div>';
+            grid.innerHTML = '<div style="color:#ef4444;text-align:center;width:100%;">Error loading employees</div>';
         }
     }
     window.removeEmployee = removeEmployee;
-    document.addEventListener('DOMContentLoaded', loadEmployeesMgmt);
+    document.addEventListener('DOMContentLoaded', loadEmployeesGrid);
     </script>
 </body>
 </html> 

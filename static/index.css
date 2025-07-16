@@ -391,3 +391,309 @@ input[type="text"]:focus, input[type="date"]:focus {
         border-radius: 7px;
     }
 }
+
+/* --- Google Meet-inspired Employee Management styles (polished) --- */
+.meet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #23272f;
+    padding: 0 32px;
+    height: 64px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.meet-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 1px;
+}
+.meet-nav {
+    display: flex;
+    gap: 16px;
+}
+.meet-nav a {
+    color: #b0b8c1;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 8px 20px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+.meet-nav a.active, .meet-nav a:hover {
+    background: #181a20;
+    color: #4f8cff;
+    font-weight: 600;
+}
+.meet-main-card {
+    max-width: 900px;
+    margin: 48px auto 0 auto;
+    background: #23272f;
+    border-radius: 18px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+    padding: 40px 36px 60px 36px;
+    position: relative;
+}
+.meet-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 24px;
+}
+.meet-employee-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 28px;
+    margin-top: 24px;
+}
+.meet-employee-card {
+    background: #181a20;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 12px 18px 12px;
+    position: relative;
+    transition: box-shadow 0.18s;
+}
+.meet-employee-card:hover {
+    box-shadow: 0 4px 24px rgba(79,140,255,0.12);
+}
+.meet-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #232e3a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    color: #4f8cff;
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+.meet-employee-name {
+    font-size: 1.08rem;
+    font-weight: 500;
+    color: #f1f3f4;
+    margin-bottom: 6px;
+    text-align: center;
+}
+.meet-employee-id {
+    font-size: 0.98rem;
+    color: #b0b8c1;
+    margin-bottom: 10px;
+}
+.meet-remove-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.18s;
+}
+.meet-remove-btn:hover {
+    background: #b91c1c;
+}
+.meet-fab {
+    position: fixed;
+    bottom: 36px;
+    right: 36px;
+    background: #4f8cff;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    box-shadow: 0 4px 16px rgba(79,140,255,0.18);
+    font-size: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: background 0.18s;
+}
+.meet-fab:hover {
+    background: #2563eb;
+}
+.meet-modal-bg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(24,26,32,0.85);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.18s;
+}
+.meet-modal {
+    background: #23272f;
+    border-radius: 16px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.22);
+    padding: 36px 32px 28px 32px;
+    min-width: 320px;
+    max-width: 95vw;
+    width: 400px;
+    position: relative;
+    transition: transform 0.18s, opacity 0.18s;
+}
+.meet-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: #b0b8c1;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.meet-modal-title {
+    font-size: 1.18rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 18px;
+}
+.meet-modal-form-group {
+    margin-bottom: 18px;
+}
+.meet-modal label {
+    color: #b0b8c1;
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+}
+.meet-modal input[type="text"], .meet-modal input[type="file"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #2a2d36;
+    border-radius: 6px;
+    background: #181a20;
+    color: #f1f3f4;
+    font-size: 1rem;
+}
+.meet-modal input[type="text"]:focus {
+    outline: 2px solid #4f8cff;
+}
+.meet-modal-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.meet-modal-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 0;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.18s;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    text-align: center;
+}
+.meet-modal-btn.primary {
+    background: #4f8cff;
+    color: #fff;
+}
+.meet-modal-btn.primary:hover {
+    background: #2563eb;
+}
+.meet-modal-btn.secondary {
+    background: #232e3a;
+    color: #b0b8c1;
+}
+.meet-modal-btn.secondary:hover {
+    background: #181a20;
+}
+.meet-modal-btn.success {
+    background: #22c55e;
+    color: #fff;
+}
+.meet-modal-btn.success:hover {
+    background: #15803d;
+}
+.meet-modal-status {
+    margin-top: 10px;
+    min-height: 22px;
+    font-size: 1rem;
+}
+@media (max-width: 700px) {
+    .meet-main-card {
+        padding: 18px 4vw 60px 4vw;
+    }
+    .meet-modal {
+        padding: 18px 4vw 18px 4vw;
+        min-width: unset;
+        width: 98vw;
+    }
+    .meet-fab {
+        right: 12px;
+        bottom: 12px;
+        width: 54px;
+        height: 54px;
+        font-size: 1.6rem;
+    }
+}
+.meet-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+.meet-avatar-initial {
+    font-size: 2.2rem;
+    color: #4f8cff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+.meet-avatar-icon {
+    width: 72px;
+    height: 72px;
+    display: block;
+    margin: 0 auto;
+}
+.meet-modal input:disabled, .meet-modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.meet-modal input:focus {
+    outline: 2px solid #4f8cff;
+}
+@media (max-width: 700px) {
+    .meet-fab {
+        z-index: 10;
+    }
+    .meet-modal-bg {
+        z-index: 200;
+    }
+}
+@media (max-width: 500px) {
+    .meet-modal-btn-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .meet-modal-btn {
+        font-size: 0.98rem;
+        padding: 10px 0;
+    }
+}
