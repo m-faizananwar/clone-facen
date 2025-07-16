@@ -12,8 +12,10 @@ let detectionInterval = null;
 let lastDetection = { faces: [], timestamp: 0 };
 let stableRealFaceSince = null;
 let lastRecognitionTrigger = 0;
-const DETECTION_INTERVAL_MS = 200;
+const DETECTION_INTERVAL_MS = 100; // was 200, now 100ms for smoother detection
 const RECOGNITION_STABLE_MS = 1000;
+let detectionInFlight = false; // Add this flag to debounce detection requests
+let latestDetectionFaces = [];
 
 // DOM elements
 const startCameraBtn = document.getElementById('startCamera');
@@ -60,6 +62,7 @@ async function startCamera() {
         // Start detection overlay
         if (!detectionInterval) {
             detectionInterval = setInterval(liveDetect, DETECTION_INTERVAL_MS);
+            requestAnimationFrame(drawDetectionOverlay);
         }
     } catch (err) {
         console.error('Error accessing camera:', err);
@@ -312,10 +315,40 @@ function drawDetections(faces) {
     detectionFeedback.textContent = feedback;
 }
 
+function drawDetectionOverlay() {
+    // Always clear and redraw overlays using the latest detection result
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let feedback = '';
+    if (!latestDetectionFaces || latestDetectionFaces.length === 0) {
+        feedback = 'No face detected';
+        detectionFeedback.style.color = '#888';
+    } else {
+        latestDetectionFaces.forEach(face => {
+            let color = '#FFD600'; // yellow for unknown
+            if (face.is_real === true) color = '#28a745'; // green
+            else if (face.is_real === false) color = '#dc3545'; // red
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.rect(face.x, face.y, face.w, face.h);
+            ctx.stroke();
+            // Draw label
+            ctx.font = '16px Arial';
+            ctx.fillStyle = color;
+            let label = face.is_real === true ? 'Real Face' : (face.is_real === false ? 'Spoofing' : 'Unknown');
+            ctx.fillText(label, face.x, face.y - 8);
+            feedback = label;
+        });
+    }
+    detectionFeedback.textContent = feedback;
+    requestAnimationFrame(drawDetectionOverlay); // keep drawing overlays smoothly
+}
+
 async function liveDetect() {
     if (video.videoWidth === 0 || video.videoHeight === 0) return;
-    // Only send detection if not processing recognition
     if (isProcessing) return;
+    if (detectionInFlight) return; // Debounce: only one detection at a time
+    detectionInFlight = true;
     // Get frame
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -329,27 +362,27 @@ async function liveDetect() {
         });
         const result = await response.json();
         if (result.success) {
-            drawDetections(result.faces);
+            latestDetectionFaces = result.faces;
             // Check for stable real face
             const realFace = result.faces.find(f => f.is_real === true);
             const now = Date.now();
             if (realFace) {
                 if (!stableRealFaceSince) stableRealFaceSince = now;
-                // Only trigger recognition if stable for RECOGNITION_STABLE_MS and not recently triggered
                 if (now - stableRealFaceSince > RECOGNITION_STABLE_MS && now - lastRecognitionTrigger > RECOGNITION_STABLE_MS) {
                     lastRecognitionTrigger = now;
                     stableRealFaceSince = null;
-                    // Trigger recognition (simulate click)
                     recognizeFace();
                 }
             } else {
                 stableRealFaceSince = null;
             }
         } else {
-            drawDetections([]);
+            latestDetectionFaces = [];
         }
     } catch (e) {
-        drawDetections([]);
+        latestDetectionFaces = [];
+    } finally {
+        detectionInFlight = false;
     }
 }
 
