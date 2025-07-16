@@ -5,59 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Recognition Attendance System</title>
     <link rel="stylesheet" href="/static/index.css">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <h1>Face Recognition Attendance System</h1>
-        
-        <div class="main-content">
-            <!-- Camera Section -->
-            <div class="camera-section">
-                <h3>Camera Feed</h3>
+<body class="dark-mode">
+    <nav class="topnav">
+        <div class="brand">Face Attendance</div>
+        <div class="nav-tabs">
+            <button class="tab-btn active" id="tab-today">Today's Attendance</button>
+            <button class="tab-btn" id="tab-past">Past Attendance</button>
+        </div>
+    </nav>
+    <div class="main-layout">
+        <div class="left-panel">
+            <div class="card camera-card">
+                <div class="camera-header">
+                    <span class="camera-title">Camera</span>
+                    <span id="detectionFeedback" class="detection-feedback"></span>
+                </div>
                 <div class="camera-container">
                     <video id="video" autoplay playsinline></video>
                     <canvas id="canvas"></canvas>
                 </div>
-                <div id="detectionFeedback" class="detection-feedback"></div>
-                
-                <div class="controls">
-                    <button id="startCamera" class="btn">Start Camera</button>
-                    <button id="recognizeFace" class="btn btn-success" disabled>Recognize Face</button>
-                    <button id="captureForEmployee" class="btn btn-warning" disabled>Capture for New Employee</button>
+                <div class="camera-controls">
+                    <button id="startCamera" class="btn primary">Start Camera</button>
+                    <button id="recognizeFace" class="btn success" disabled>Recognize Face</button>
+                    <button id="captureForEmployee" class="btn warning" disabled>Capture for New Employee</button>
+                    <button id="toggleRealtime" class="btn success" disabled>Start Real-Time Attendance</button>
                 </div>
-                <div class="realtime-toggle">
-                    <button id="toggleRealtime" class="btn btn-success" disabled>Start Real-Time Attendance</button>
-                    <span id="realtimeStatus" class="realtime-status" style="display:none;">Real-Time Mode ON</span>
-                </div>
-                
                 <div id="recognitionStatus" class="status-box" style="display: none;"></div>
                 <div class="loading" id="loadingIndicator">Processing...</div>
             </div>
-            
-            <!-- Info Section -->
-            <div class="info-section">
-                <h3>System Information</h3>
-                
+        </div>
+        <div class="right-panel">
+            <div class="card info-card">
+                <div class="info-header">
+                    <span class="info-title">System Info</span>
+                </div>
                 <div id="lastRecognition" class="status-box status-info" style="display: none;">
                     <strong>Last Recognition:</strong><br>
                     <span id="lastRecognitionText">None</span>
                 </div>
-                
                 <div id="attendanceStatus" class="status-box" style="display: none;"></div>
-                
-                <!-- Add Employee Form -->
                 <div class="add-employee">
                     <h4>Add New Employee</h4>
                     <div class="form-group">
                         <label for="employeeName">Employee Name:</label>
                         <input type="text" id="employeeName" placeholder="Enter employee name">
                     </div>
-                    <button id="addEmployee" class="btn" disabled>Add Employee (Capture First)</button>
+                    <button id="addEmployee" class="btn primary" disabled>Add Employee (Capture First)</button>
                     <div id="addEmployeeStatus" style="margin-top: 10px;"></div>
                 </div>
-                
-                <!-- Employee List -->
-                <div>
+                <div class="employee-list-section">
                     <h4>Registered Employees</h4>
                     <div id="employeeList" class="employee-list">
                         Loading employees...
@@ -65,16 +63,27 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Attendance Log -->
-        <div>
-            <h3>Today's Attendance</h3>
-            <div id="attendanceLog" class="attendance-log">
-                Loading attendance records...
+        <div class="attendance-panel card">
+            <div class="attendance-tabs">
+                <div id="attendance-today" class="attendance-tab active">
+                    <h3>Today's Attendance</h3>
+                    <div id="attendanceLog" class="attendance-log">
+                        Loading attendance records...
+                    </div>
+                </div>
+                <div id="attendance-past" class="attendance-tab">
+                    <h3>Past Attendance</h3>
+                    <div class="past-attendance-controls">
+                        <input type="date" id="pastDatePicker">
+                        <button id="loadPastAttendance" class="btn primary">Load</button>
+                    </div>
+                    <div id="pastAttendanceLog" class="attendance-log">
+                        Select a date to view past attendance.
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
     <script src="/static/index.js"></script>
 </body>
 </html> 

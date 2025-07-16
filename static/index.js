@@ -35,12 +35,38 @@ const toggleRealtimeBtn = document.getElementById('toggleRealtime');
 const realtimeStatus = document.getElementById('realtimeStatus');
 const detectionFeedback = document.getElementById('detectionFeedback');
 
+// Tab switching and past attendance logic
+const tabTodayBtn = document.getElementById('tab-today');
+const tabPastBtn = document.getElementById('tab-past');
+const attendanceTodayTab = document.getElementById('attendance-today');
+const attendancePastTab = document.getElementById('attendance-past');
+const pastAttendanceLog = document.getElementById('pastAttendanceLog');
+const pastDatePicker = document.getElementById('pastDatePicker');
+const loadPastAttendanceBtn = document.getElementById('loadPastAttendance');
+
 // Event listeners
 startCameraBtn.addEventListener('click', startCamera);
 recognizeFaceBtn.addEventListener('click', recognizeFace);
 captureForEmployeeBtn.addEventListener('click', captureForEmployee);
 addEmployeeBtn.addEventListener('click', addEmployee);
 toggleRealtimeBtn.addEventListener('click', toggleRealtimeMode);
+
+// Tab switching
+if (tabTodayBtn && tabPastBtn && attendanceTodayTab && attendancePastTab) {
+    tabTodayBtn.addEventListener('click', () => {
+        tabTodayBtn.classList.add('active');
+        tabPastBtn.classList.remove('active');
+        attendanceTodayTab.classList.add('active');
+        attendancePastTab.classList.remove('active');
+    });
+    tabPastBtn.addEventListener('click', () => {
+        tabPastBtn.classList.add('active');
+        tabTodayBtn.classList.remove('active');
+        attendancePastTab.classList.add('active');
+        attendanceTodayTab.classList.remove('active');
+        loadPastAttendance();
+    });
+}
 
 // Start camera
 async function startCamera() {
@@ -258,6 +284,49 @@ async function loadAttendance() {
     }
 }
 
+// Load all past attendance logs, optionally filtered by date
+async function loadPastAttendance() {
+    try {
+        pastAttendanceLog.innerHTML = '<div class="attendance-item">Loading...</div>';
+        const response = await fetch('/get_attendance');
+        const attendance = await response.json();
+        let filtered = attendance;
+        const selectedDate = pastDatePicker && pastDatePicker.value;
+        if (selectedDate) {
+            filtered = attendance.filter(record => record.date === selectedDate);
+        }
+        if (filtered.length === 0) {
+            pastAttendanceLog.innerHTML = '<div class="attendance-item">No attendance records found.</div>';
+        } else {
+            pastAttendanceLog.innerHTML = '';
+            filtered.forEach(record => {
+                const item = document.createElement('div');
+                item.className = 'attendance-item';
+                let html = `<strong>${record.employee}</strong> <span style='font-size:0.95em;color:#4f8cff;'>(${record.date})</span><ul style='margin:0 0 0 20px;padding:0;'>`;
+                if (record.events && Array.isArray(record.events)) {
+                    record.events.forEach(ev => {
+                        html += `<li>${ev.type.toUpperCase()} at ${ev.time}</li>`;
+                    });
+                } else if (record.time) {
+                    html += `<li>IN at ${record.time}</li>`;
+                }
+                html += '</ul>';
+                item.innerHTML = html;
+                pastAttendanceLog.appendChild(item);
+            });
+        }
+    } catch (error) {
+        pastAttendanceLog.innerHTML = '<div class="attendance-item">Error loading past attendance</div>';
+    }
+}
+
+if (loadPastAttendanceBtn) {
+    loadPastAttendanceBtn.addEventListener('click', loadPastAttendance);
+}
+if (pastDatePicker) {
+    pastDatePicker.addEventListener('change', loadPastAttendance);
+}
+
 // Utility functions
 function showStatus(message, type) {
     recognitionStatus.textContent = message;
@@ -456,4 +525,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAttendance();
     // Refresh attendance every 30 seconds
     setInterval(loadAttendance, 30000);
+    // If past tab is active on load, load past attendance
+    if (attendancePastTab && attendancePastTab.classList.contains('active')) {
+        loadPastAttendance();
+    }
 });

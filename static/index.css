@@ -1,50 +1,110 @@
-body {
-    font-family: Arial, sans-serif;
+body.dark-mode {
+    font-family: 'Inter', Arial, sans-serif;
     margin: 0;
-    padding: 20px;
-    background-color: #f5f5f5;
+    padding: 0;
+    background: #181a20;
+    color: #f1f3f4;
+    min-height: 100vh;
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    background-color: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.topnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #23272f;
+    padding: 0 32px;
+    height: 64px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.brand {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 1px;
+}
+.nav-tabs {
+    display: flex;
+    gap: 8px;
+}
+.tab-btn {
+    background: none;
+    border: none;
+    color: #b0b8c1;
+    font-size: 1rem;
+    padding: 8px 20px;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.tab-btn.active, .tab-btn:hover {
+    background: #181a20;
+    color: #4f8cff;
+    font-weight: 600;
 }
 
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 30px;
+.main-layout {
+    display: flex;
+    flex-direction: row;
+    gap: 32px;
+    max-width: 1400px;
+    margin: 32px auto 0 auto;
+    min-height: 600px;
 }
-
-.main-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-bottom: 30px;
+.left-panel, .right-panel {
+    flex: 1 1 0;
+    min-width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
-
-.camera-section {
-    text-align: center;
+.attendance-panel {
+    flex: 1.2 1 0;
+    min-width: 400px;
+    margin-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: none;
+    box-shadow: none;
 }
-
+.card {
+    background: #23272f;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    padding: 28px 24px;
+    margin-bottom: 0;
+}
+.camera-card {
+    align-items: center;
+    justify-content: center;
+}
+.camera-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.camera-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
 .camera-container {
     position: relative;
-    display: inline-block;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 18px auto;
+    background: #111217;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #2a2d36;
 }
-
 #video {
     width: 100%;
-    max-width: 400px;
-    height: 300px;
-    border: 3px solid #ddd;
+    height: 320px;
+    background: #000;
     border-radius: 10px;
-    background-color: #000;
+    display: block;
 }
-
 #canvas {
     position: absolute;
     left: 0;
@@ -55,154 +115,188 @@ h1 {
     display: block;
 }
 .detection-feedback {
-    margin-top: 10px;
-    font-weight: bold;
-    font-size: 16px;
-    color: #333;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #4f8cff;
+    margin-left: 16px;
 }
-
-.controls {
-    margin-top: 15px;
-}
-.realtime-toggle {
-    margin-top: 10px;
-    margin-bottom: 10px;
+.camera-controls {
     display: flex;
-    align-items: center;
     gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
 }
-.realtime-status {
-    font-weight: bold;
-    color: #28a745;
-    margin-left: 10px;
-}
-
 .btn {
-    background-color: #007bff;
-    color: white;
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 10px 22px;
     border: none;
-    padding: 10px 20px;
-    margin: 5px;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    transition: background 0.18s, color 0.18s;
+    font-weight: 500;
+    outline: none;
+    margin: 0 2px;
 }
-
-.btn:hover {
-    background-color: #0056b3;
+.btn.primary {
+    background: #4f8cff;
+    color: #fff;
 }
-
+.btn.primary:hover, .btn.primary:focus {
+    background: #2563eb;
+}
+.btn.success {
+    background: #22c55e;
+    color: #fff;
+}
+.btn.success:hover, .btn.success:focus {
+    background: #15803d;
+}
+.btn.warning {
+    background: #facc15;
+    color: #23272f;
+}
+.btn.warning:hover, .btn.warning:focus {
+    background: #eab308;
+}
 .btn:disabled {
-    background-color: #6c757d;
+    background: #3a3d46;
+    color: #888;
     cursor: not-allowed;
 }
-
-.btn-success {
-    background-color: #28a745;
-}
-
-.btn-success:hover {
-    background-color: #1e7e34;
-}
-
-.btn-warning {
-    background-color: #ffc107;
-    color: #000;
-}
-
-.btn-warning:hover {
-    background-color: #e0a800;
-}
-
-.info-section {
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 10px;
-}
-
 .status-box {
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 5px;
-    font-weight: bold;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 7px;
+    font-weight: 500;
+    font-size: 1rem;
+    background: #181a20;
+    color: #f1f3f4;
+    border: 1px solid #2a2d36;
 }
-
 .status-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background: #1e2e22;
+    color: #22c55e;
+    border: 1px solid #22c55e;
 }
-
 .status-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background: #2e1e1e;
+    color: #ef4444;
+    border: 1px solid #ef4444;
 }
-
 .status-info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
+    background: #1e293b;
+    color: #4f8cff;
+    border: 1px solid #4f8cff;
 }
-
+.info-card {
+    margin-bottom: 0;
+}
+.info-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
 .add-employee {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: #e9ecef;
-    border-radius: 10px;
+    margin-top: 18px;
+    padding: 18px 0 0 0;
+    border-top: 1px solid #2a2d36;
 }
-
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
-
 label {
     display: block;
     margin-bottom: 5px;
-    font-weight: bold;
+    font-weight: 500;
+    color: #b0b8c1;
 }
-
-input[type="text"] {
+input[type="text"], input[type="date"] {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
+    padding: 8px 10px;
+    border: 1px solid #2a2d36;
+    border-radius: 5px;
+    background: #181a20;
+    color: #f1f3f4;
+    font-size: 1rem;
+    margin-bottom: 6px;
 }
-
+input[type="text"]:focus, input[type="date"]:focus {
+    outline: 2px solid #4f8cff;
+}
+.employee-list-section {
+    margin-top: 18px;
+}
 .employee-list {
-    margin-top: 20px;
-    max-height: 200px;
+    margin-top: 8px;
+    max-height: 180px;
     overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    border: 1px solid #2a2d36;
+    border-radius: 6px;
     padding: 10px;
+    background: #181a20;
 }
-
 .employee-item {
-    padding: 5px 0;
-    border-bottom: 1px solid #eee;
+    padding: 6px 0;
+    border-bottom: 1px solid #23272f;
+    color: #f1f3f4;
 }
-
+.employee-item:last-child {
+    border-bottom: none;
+}
+.attendance-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: none;
+}
+.attendance-tab {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    background: none;
+}
+.attendance-tab.active {
+    display: block;
+}
+.past-attendance-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
 .attendance-log {
-    margin-top: 20px;
-    max-height: 300px;
+    margin-top: 10px;
+    max-height: 320px;
     overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    border: 1px solid #2a2d36;
+    border-radius: 7px;
     padding: 10px;
+    background: #181a20;
 }
-
 .attendance-item {
-    padding: 8px;
-    margin: 5px 0;
-    background-color: #f1f3f4;
-    border-radius: 4px;
-    font-size: 13px;
+    padding: 12px 10px;
+    margin: 8px 0;
+    background: #23272f;
+    border-radius: 7px;
+    font-size: 1rem;
+    color: #f1f3f4;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-
 .loading {
     display: none;
-    color: #007bff;
-    font-weight: bold;
+    color: #4f8cff;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 10px;
+}
+@media (max-width: 1100px) {
+    .main-layout {
+        flex-direction: column;
+        gap: 18px;
+    }
+    .attendance-panel {
+        margin-left: 0;
+        min-width: unset;
+    }
 }
